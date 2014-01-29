@@ -1,0 +1,15 @@
+A simple bible study tool for searching and displaying bible verses.
+    1. Two bible versions are included: KJV and CUV (Ho Ho Ben).
+    2. Only exact search is supported, and limited on KJV.
+    
+The Pickle file of KJV is from:
+    Using a KJV Bible with Pickle and Python
+    http://blog.flip-edesign.com/_rst/Using_a_KJV_Bible_with_Pickle_and_Python.html
+
+The Pickle file of CUN is prepared by the script
+    hohobook.py that converts CUV (ho ho ben) into an orderdictionary
+    
+Jay S Liu
+jay.s.liu@gmail.com
+
+Jan 29, 2014
