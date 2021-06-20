@@ -21,6 +21,10 @@ import sys
 import pprint, pickle
 import random, re
 
+from gtts import gTTS 
+import os, time
+from icecream import ic
+
 def random_verse(bible, book=False):
   if not book:
      book = random.choice(list(bible.keys()))
@@ -94,6 +98,27 @@ def display_book(book, halt=True):
         if halt and (chapter < chapsInBook[book]):
             input("hit any key to continue")
 
+def audio_chapter(book, chapter, halt=False):
+    """ Audio a chapter in a book 
+    """
+    #global bible, cbible
+    ic(book, chapter)
+    text = "".join(cbible[book][chapter][verse] for verse in range(1, len(bible[book][chapter])+1))
+    ic(text)
+    fileName = f"./tmp_{book}_{chapter}.mp3"
+ 
+    language = 'zh-TW'
+    # Create an instance of gTTS class 
+    audioObj = gTTS(text=text, lang=language, slow=False) 
+    # Method to create your audio file in mp3 format
+    audioObj.save(fileName)
+    # This will play your audio file
+    #os.system("mpg321 welcome.mp3")
+    #
+    #   update path and replace with windows call
+    __location__ = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
+    os.startfile(os.path.join(__location__, fileName))
+
 def display_chapter(book, chapter, halt=False):
     """ Dispaly a chapter in a book 
     """
@@ -112,7 +137,28 @@ def display_verse(book, chapter, verse):
     print ("{0}\n{1}:{2}\n".format(book, chapter, verse))
     print ("{0}".format(bible[book][chapter][verse]))
     print ("{0}\n".format(cbible[book][chapter][verse]))
-                                            
+
+def audio_verse(book, chapter, verse):
+    """ Play audio of a verse in the bible 
+    """
+    #global bible, cbible
+    text = cbible[book][chapter][verse]
+    fileName = f"./tmp_{book}_{chapter}_{verse}.mp3"
+    ic(text)
+
+    # Specify the language in which you want your audio
+    language = 'zh-TW'
+    # Create an instance of gTTS class 
+    audioObj = gTTS(text=text, lang=language, slow=False) 
+    # Method to create your audio file in mp3 format
+    audioObj.save(fileName)
+    # This will play your audio file
+    #os.system("mpg321 welcome.mp3")
+    #
+    #   update path and replace with windows call
+    __location__ = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
+    os.startfile(os.path.join(__location__, fileName))
+
 def test0():
     """ test on global variables """
     
@@ -229,6 +275,43 @@ def displayText():
                 except:             # something went wrong with the verse
                     print('\nYour selection is not in the Bible!\n')
                     print(random_verse(bible, book))
+
+def audioText():
+    #global ALLbooks, chapsInBook, bible
+    #
+    # input book
+    #
+    book = input("Input name of the book: ")
+    if (book not in ALLbooks):
+        print("\nbook must be one of --\n{0}\n".format(ALLbooks))
+        print(random_verse(bible))
+        return
+    #
+    # input chapter
+    #
+    _tmp = input("Input chapter no. in the book: ")
+    if (_tmp == ''):                # no chapter is entered
+        audio_book(book)              # display book
+        return
+    else:
+        chapter = int(_tmp)         # chapter must be OK, all error goes to 1
+        if (chapter > chapsInBook[book] or chapter < 1):
+            if ():
+                print('\nThere is only one chapter in the book of {0}.\n'.format(book))
+            else:
+                print('\nThere are {0} chapters in the book of {1}.\n'.format(chapsInBook[book], book))
+            print(random_verse(bible, book))
+            return
+        else:                       # chapter OK, then input verse
+            _tmp = input("Input the verse no.: ")
+            if (_tmp == ''):        # no verse is entered
+                audio_chapter(book, chapter)  # display book+chapter
+            else:                   # verse OK?
+                verse = int(_tmp)
+                ic(book, chapter, verse)
+                audio_verse(book, chapter, verse)
+                    
+
         
 def search():
     kw = input("Input search key words: ")
@@ -266,12 +349,15 @@ def main():
     O/o List books in old testament
     N/n List books in new testament
     D/d Display a book/chapter/verse in the bible
+    A/a Audio a book/chapter/verse in the bible
     S/s Search
     T/t Tests
     E/e. Exit
     """
 
     menu = {
+        'A': audioText,
+        'a': audioText,
         'O': listOTbooks,
         'o': listOTbooks,
         'N': listNTbooks,
