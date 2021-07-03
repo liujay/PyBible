@@ -17,7 +17,7 @@ Jan 29, 2014
 
 """
 
-import os, sys, time
+import os, platform, sys, time
 import pprint, pickle
 import random, re
 from pathlib import Path
@@ -147,20 +147,21 @@ def audio_chapter(book, chapter, language='zh-TW', playAudio=True):
     if ( playAudio ):
         #   update path -- mostly for windows system
         __location__ = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
-        os.startfile(os.path.join(__location__, fileName))
+        playAudioFile(fileName, platform.system())
 
 def audio_verse(book, chapter, verse, language='zh-TW'):
     """ Play audio of a verse in the bible 
     """
     #global bible, cbible
     text = cbible[book][chapter][verse]
-    fileName = f"./tmp_{book}_{chapter}_{verse}.mp3"
+    shortBook = book.replace(" ", "")
+    fileName = f"./tmp_{shortBook}_{chapter}_{verse}.mp3"
     ic(text)
 
     text2Audio(text, fileName, language)
     #   update path and replace with windows call
     __location__ = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
-    os.startfile(os.path.join(__location__, fileName))
+    playAudioFile(fileName, platform.system())
     #os.remove(os.path.join(__location__, fileName))
 
 def text2Audio(text, fileName, language='zh-TW'):
@@ -168,6 +169,16 @@ def text2Audio(text, fileName, language='zh-TW'):
     audioObj = gTTS(text=text, lang=language, slow=False) 
     # Method to create your audio file in mp3 format
     audioObj.save(fileName)
+
+def playAudioFile(fileName, osType):
+    """ Play audio fileName using OS features
+    """
+    if osType in ["Linux"]:
+        os.system(f"mpg321 {fileName} &")
+    elif osType in ["Windows"]:
+        os.startfile(os.path.join(__location__, fileName))
+    else:           # Windows, and others: let's assuem os.startfile works for the rests
+        ic(f"Please inform me how to play audio file in {osType}")
 
 def test0():
     """ test on global variables """
