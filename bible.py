@@ -136,7 +136,9 @@ def audio_chapter(book, chapter, language='zh-TW', playAudio=True):
     shortBook = book.replace(" ", "")
     #   add book name and chapter # in audio
     title = str(book) + " chapter " + str(chapter)
-    text = "".join(cbible[book][chapter][verse] for verse in range(1, len(bible[book][chapter])+1))
+    #   select the bible version for audio
+    bibletoUse = selectBible(language)
+    text = "".join(bibletoUse[book][chapter][verse] for verse in range(1, len(bible[book][chapter])+1))
     ic(title)
     ic(text)
     #   mkdir if it does not exist
@@ -145,22 +147,20 @@ def audio_chapter(book, chapter, language='zh-TW', playAudio=True):
  
     text2Audio(title+text, fileName, language)
     if ( playAudio ):
-        #   update path -- mostly for windows system
-        __location__ = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
         playAudioFile(fileName, platform.system())
 
 def audio_verse(book, chapter, verse, language='zh-TW'):
     """ Play audio of a verse in the bible 
     """
     #global bible, cbible
-    text = cbible[book][chapter][verse]
+    #   select the bible version for audio
+    bibletoUse = selectBible(language)
+    text = bibletoUse[book][chapter][verse]
     shortBook = book.replace(" ", "")
     fileName = f"./tmp_{shortBook}_{chapter}_{verse}.mp3"
     ic(text)
 
     text2Audio(text, fileName, language)
-    #   update path and replace with windows call
-    __location__ = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
     playAudioFile(fileName, platform.system())
     #os.remove(os.path.join(__location__, fileName))
 
@@ -174,11 +174,20 @@ def playAudioFile(fileName, osType):
     """ Play audio fileName using OS features
     """
     if osType in ["Linux"]:
-        os.system(f"mpg321 {fileName} &")
+        os.system(f"mpg321 {fileName} 2>/dev/null &")
     elif osType in ["Windows"]:
+        __location__ = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
         os.startfile(os.path.join(__location__, fileName))
     else:           # Windows, and others: let's assuem os.startfile works for the rests
         ic(f"Please inform me how to play audio file in {osType}")
+
+def selectBible(language='zh-TW'):
+    """ Select the bible text version for audio based on language
+    """
+    if ( language == 'en-US' ):
+        return bible
+    else:
+        return cbible
 
 def test0():
     """ test on global variables """
@@ -312,7 +321,7 @@ def audioText():
     #
     _tmp = input("Input chapter no. in the book: ")
     if (_tmp == ''):                # no chapter is entered
-        audio_book(book)              # display book
+        audio_book(book, language)              # display book
         return
     else:
         chapter = int(_tmp)         # chapter must be OK, all error goes to 1
@@ -326,12 +335,26 @@ def audioText():
         else:                       # chapter OK, then input verse
             _tmp = input("Input the verse no.: ")
             if (_tmp == ''):        # no verse is entered
-                audio_chapter(book, chapter)  # display book+chapter
+                audio_chapter(book, chapter, language)  # audio book+chapter
             else:                   # verse OK?
                 verse = int(_tmp)
                 ic(book, chapter, verse)
-                audio_verse(book, chapter, verse)
+                audio_verse(book, chapter, verse, language)
                     
+def configAudioLanguage():
+    """ Configure language for audio
+    """
+    global language
+    #
+    #   select language:
+    #       two for now:    zh-TW, or en-US
+    #
+    _tmp = input("Input langugae: 1 for zh-TW, or 2 for en-US: ")
+    ic(_tmp,type(_tmp))
+    if ( _tmp == '2' ):
+        language = 'en-US'
+    else:                   # default to zh-TW
+        language = 'zh-TW'
        
 def search():
     kw = input("Input search key words: ")
@@ -370,6 +393,7 @@ def main():
     N/n List books in new testament
     D/d Display a book/chapter/verse in the bible
     A/a Audio a book/chapter/verse in the bible
+    L/l Configure Audio language
     S/s Search
     T/t Tests
     E/e. Exit
@@ -384,6 +408,8 @@ def main():
         'n': listNTbooks,
         'D': displayText,
         'd': displayText,
+        'L': configAudioLanguage,
+        'l': configAudioLanguage,
         'S': search,
         's': search,
         'T': testAll,
@@ -393,6 +419,7 @@ def main():
     }
 
     while True:
+        print(f"\n  Audio language selected: {language}")
         print(PROMPT) 
         choice = input("Your choice: ")
         menu[choice]()
@@ -425,6 +452,9 @@ for book in bible.keys():
         NTbooks.append(book)
 #        
 # -----------------------------------------------------------------------------
+
+#   set default audio language is zh-TW
+language = 'zh-TW'
 
 if __name__ == "__main__":
     main()
