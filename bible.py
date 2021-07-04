@@ -91,7 +91,7 @@ def display_book(book, halt=True):
     """
     #global bible, cbible, chapsInBook
     for chapter in range(1, chapsInBook[book]+1):
-        print("{0} {1}".format(book, chapter))
+        print("\n{0} {1}:".format(book, chapter))
         for verse in range(1, len(bible[book][chapter])+1):
             print("{0} {1}".format(verse, bible[book][chapter][verse]))
             print("{0} {1}\n".format(verse, cbible[book][chapter][verse]))
@@ -103,10 +103,13 @@ def display_chapter(book, chapter, halt=False):
     """ Dispaly a chapter in a book 
     """
     #global bible, cbible
-    print(book, chapter)
+    print("\n{0}\t{1}:\n".format(book, chapter))
     for verse in range(1, len(bible[book][chapter])+1):
         print ("{0} {1}".format(verse, bible[book][chapter][verse]))
-        print ("{0} {1}\n".format(verse, cbible[book][chapter][verse]))
+        try:
+            print ("{0} {1}\n".format(verse, cbible[book][chapter][verse]))
+        except KeyError:
+            ic(f"No verse {book} {chapter}:{verse} in zh-TW bible version")
         if halt:
             input("hit any key to continue")
 
@@ -114,7 +117,7 @@ def display_verse(book, chapter, verse):
     """ Dispaly a verse in the bible 
     """
     #global bible, cbible
-    print ("{0}\n{1}:{2}\n".format(book, chapter, verse))
+    print ("\n{0}\t{1}:{2}\n".format(book, chapter, verse))
     print ("{0}".format(bible[book][chapter][verse]))
     print ("{0}\n".format(cbible[book][chapter][verse]))
 
@@ -138,14 +141,24 @@ def audio_chapter(book, chapter, language='zh-TW', playAudio=True):
     title = str(book) + " chapter " + str(chapter)
     #   select the bible version for audio
     bibletoUse = selectBible(language)
-    text = "".join(bibletoUse[book][chapter][verse] for verse in range(1, len(bible[book][chapter])+1))
-    ic(title)
-    ic(text)
+    #   scan all verses in chapter, then compose text
+    verseList = []
+    for verse in range(1, len(bible[book][chapter])+1):
+        try:
+            bibletoUse[book][chapter][verse]
+            verseList.append(verse)
+        except KeyError:
+            ic(f"No verse {book} {chapter}:{verse} in {language} bible version")
+    text = "".join(bibletoUse[book][chapter][verse] for verse in verseList)
+    print(title)
+    print(text)
     #   mkdir if it does not exist
-    Path(f"./audio/{shortBook}").mkdir(parents=True, exist_ok=True)
-    fileName = f"./audio/{shortBook}/{shortBook}_{chapter}.mp3"
- 
-    text2Audio(title+text, fileName, language)
+    Path(f"./audio/{language}/{shortBook}").mkdir(parents=True, exist_ok=True)
+    fileName = f"./audio/{language}/{shortBook}/{shortBook}_{chapter}.mp3"
+    audioFile = Path(fileName)
+    #   create audio file only if it does not exits
+    if ( not audioFile.exists() ):
+        text2Audio(title+text, fileName, language)
     if ( playAudio ):
         playAudioFile(fileName, platform.system())
 
@@ -155,14 +168,21 @@ def audio_verse(book, chapter, verse, language='zh-TW'):
     #global bible, cbible
     #   select the bible version for audio
     bibletoUse = selectBible(language)
-    text = bibletoUse[book][chapter][verse]
+    try:
+        text = bibletoUse[book][chapter][verse]
+    except KeyError:
+        ic(f"No verse {book} {chapter}:{verse} in {language} bible version")
+        return
+    print(text)
     shortBook = book.replace(" ", "")
-    fileName = f"./tmp_{shortBook}_{chapter}_{verse}.mp3"
-    ic(text)
-
-    text2Audio(text, fileName, language)
+    #   mkdir if it does not exist
+    Path(f"./audio/tmp/{language}").mkdir(parents=True, exist_ok=True)
+    fileName = f"./audio/tmp/{language}/{shortBook}_{chapter}_{verse}.mp3"
+    audioFile = Path(fileName)
+    #   create audio file only if it does not exits
+    if ( not audioFile.exists() ):
+        text2Audio(text, fileName, language)
     playAudioFile(fileName, platform.system())
-    #os.remove(os.path.join(__location__, fileName))
 
 def text2Audio(text, fileName, language='zh-TW'):
     # Create an instance of gTTS class 
