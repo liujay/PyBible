@@ -350,7 +350,6 @@ def configAudioLanguage():
     #       two for now:    zh-TW, or en-US
     #
     _tmp = input("Input langugae: 1 for zh-TW, or 2 for en-US: ")
-    ic(_tmp,type(_tmp))
     if ( _tmp == '2' ):
         language = 'en-US'
     else:                   # default to zh-TW
