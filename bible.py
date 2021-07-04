@@ -166,7 +166,7 @@ def audio_verse(book, chapter, verse, language='zh-TW'):
 
 def text2Audio(text, fileName, language='zh-TW'):
     # Create an instance of gTTS class 
-    audioObj = gTTS(text=text, lang=language, slow=False) 
+    audioObj = gTTS(text=text, lang=language, slow=True)
     # Method to create your audio file in mp3 format
     audioObj.save(fileName)
 
