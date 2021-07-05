@@ -1,7 +1,8 @@
 """
-A simple bible study tool for searching and displaying bible verses.
+A simple bible study tool for searching, displaying, or playing voice of bible verses.
     1. Two bible versions are included: KJV and CUV (Ho Ho Ben).
     2. Only exact search is supported, and limited on KJV.
+    3. gTTS (Google Text-to-Speech) was used, details in https://pypi.org/project/gTTS/
     
 The Pickle file of KJV is from:
     Using a KJV Bible with Pickle and Python
@@ -13,17 +14,21 @@ The Pickle file of CUN is prepared by the script
 Jay S Liu
 jay.s.liu@gmail.com
 
-Jan 29, 2014
+July 5, 2021
 
 """
 
 import os, platform, sys, time
-import pprint, pickle
+import pickle
 import random, re
 from pathlib import Path
 
 from gtts import gTTS 
-from icecream import ic
+try:
+    import icecream
+    ic = icecream.ic
+except ImportError:
+    ic = print
 
 def random_verse(bible, book=False):
   if not book:
@@ -141,15 +146,11 @@ def audio_chapter(book, chapter, language='zh-TW', playAudio=True):
     title = str(book) + " chapter " + str(chapter)
     #   select the bible version for audio
     bibletoUse = selectBible(language)
-    #   scan all verses in chapter, then compose text
+    #   compose verseList by scaning all verses in 'bibletoUse[book][chapter]' -- some verses are missing in other language version, eg CUN
     verseList = []
     for verse in range(1, len(bible[book][chapter])+1):
-        try:
-            bibletoUse[book][chapter][verse]
-            verseList.append(verse)
-        except KeyError:
-            ic(f"No verse {book} {chapter}:{verse} in {language} bible version")
-    text = "".join(bibletoUse[book][chapter][verse] for verse in verseList)
+        verse in bibletoUse[book][chapter] and verseList.append(verse)
+    text = "\n".join(bibletoUse[book][chapter][verse]  for verse in verseList )
     print(title)
     print(text)
     #   mkdir if it does not exist
