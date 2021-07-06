@@ -151,8 +151,7 @@ def audio_chapter(book, chapter, language='zh-TW', playAudio=True):
     for verse in range(1, len(bible[book][chapter])+1):
         verse in bibletoUse[book][chapter] and verseList.append(verse)
     text = "\n".join(bibletoUse[book][chapter][verse]  for verse in verseList )
-    print(title)
-    print(text)
+    display_chapter(book, chapter)
     #   mkdir if it does not exist
     Path(f"./audio/{language}/{shortBook}").mkdir(parents=True, exist_ok=True)
     fileName = f"./audio/{language}/{shortBook}/{shortBook}_{chapter}.mp3"
@@ -174,7 +173,7 @@ def audio_verse(book, chapter, verse, language='zh-TW'):
     except KeyError:
         ic(f"No verse {book} {chapter}:{verse} in {language} bible version")
         return
-    print(text)
+    display_verse(book, chapter, verse)
     shortBook = book.replace(" ", "")
     #   mkdir if it does not exist
     Path(f"./audio/tmp/{language}").mkdir(parents=True, exist_ok=True)
