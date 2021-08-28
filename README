@@ -1,4 +1,4 @@
-A simple bible study tool for searching and displaying bible verses.
+A simple bible study tool for searching, displaying and creating audio bible verses/books.
     1. Two bible versions are included: KJV and CUV (Ho Ho Ben).
     2. Only exact search is supported, and limited on KJV.
     
