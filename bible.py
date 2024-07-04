@@ -186,7 +186,7 @@ def audio_verse(book, chapter, verse, language='zh-TW'):
 
 def text2Audio(text, fileName, language='zh-TW'):
     # Create an instance of gTTS class 
-    audioObj = gTTS(text=text, lang=language, slow=True)
+    audioObj = gTTS(text=text, lang=language, lang_check=False)
     # Method to create your audio file in mp3 format
     audioObj.save(fileName)
 
@@ -194,7 +194,7 @@ def playAudioFile(fileName, osType):
     """ Play audio fileName using OS features
     """
     if osType in ["Linux"]:
-        os.system(f"mpg321 {fileName} 2>/dev/null &")
+        os.system(f"play {fileName} 2>/dev/null &")
     elif osType in ["Windows"]:
         __location__ = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
         os.startfile(os.path.join(__location__, fileName))
