@@ -204,7 +204,7 @@ def playAudioFile(fileName, osType):
 def selectBible(language='zh-TW'):
     """ Select the bible text version for audio based on language
     """
-    if ( language == 'en-US' ):
+    if ( language == 'en' ):
         return bible
     else:
         return cbible
@@ -367,11 +367,11 @@ def configAudioLanguage():
     global language
     #
     #   select language:
-    #       two for now:    zh-TW, or en-US
+    #       two for now:    zh-TW, or en
     #
-    _tmp = input("Input langugae: 1 for zh-TW, or 2 for en-US: ")
+    _tmp = input("Input langugae: 1 for zh-TW, or 2 for en: ")
     if ( _tmp == '2' ):
-        language = 'en-US'
+        language = 'en'
     else:                   # default to zh-TW
         language = 'zh-TW'
        
