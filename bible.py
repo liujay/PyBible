@@ -37,18 +37,18 @@ def random_verse(bible, book=False):
   verse = random.choice(list(bible[book][chapter].keys()))
   return '{0} {1}:{2} \n{3}'.format(book, chapter, verse, bible[book][chapter][verse])
 
-def search_key(book, chapter, kw):
+def search_key(book, chapter, kw, language='zh-TW'):
     """ Keyword (kw) search on specified bible[book][chapter]
     return a list of verses (along with the book and chapter) 
     
     return list format: [book, chapter, [list of verses]]
     """
-    #global bible
-    dic = bible[book][chapter]
+    bibletoUse = selectBible(language)
+    dic = bibletoUse[book][chapter]
     patc = re.compile(kw.lower())
     return [book, chapter, [k for k, v in dic.items() if patc.search(v.lower())]]
 
-def search_booklist(bookList, kw):
+def search_booklist(bookList, kw, language='zh-TW'):
     """ Keyword (kw) search on specified bookList
     return a list of search results each element is as in search_key()
     
@@ -58,36 +58,36 @@ def search_booklist(bookList, kw):
     result = []
     for book in bookList:
         for chapter in range(1, chapsInBook[book]+1):
-            _result = search_key(book, chapter, kw)
+            _result = search_key(book, chapter, kw, language)
             result.append(_result)
     return result
     
-def search_OT(kw):
+def search_OT(kw, language='zh-TW'):
     """ Keyword (kw) search on OT
     return a list of search results each element is as in search_key()
     
     return list format: [ [book, chapter, [list of verses]]* ]
     """
     #global OTbooks
-    return search_booklist(OTbooks, kw)    
+    return search_booklist(OTbooks, kw, language)
 
-def search_NT(kw):
+def search_NT(kw, language='zh-TW'):
     """ Keyword (kw) search on NT
     return a list of search results each element is as in search_key()
     
     return list format: [ [book, chapter, [list of verses]]* ]
     """
     #global NTbooks
-    return search_booklist(NTbooks, kw) 
+    return search_booklist(NTbooks, kw, language)
 
-def search_ALL(kw):
+def search_ALL(kw, language='zh-TW'):
     """ Keyword (kw) search on ALLbooks
     return a list of search results each element is as in search_key()
     
     return list format: [ [book, chapter, [list of verses]]* ]
     """
     #global ALLbooks
-    return search_booklist(ALLbooks, kw) 
+    return search_booklist(ALLbooks, kw, language)
 
 def display_book(book, halt=True):
     """ Dispaly a book
@@ -361,8 +361,8 @@ def audioText():
                 ic(book, chapter, verse)
                 audio_verse(book, chapter, verse, language)
                     
-def configAudioLanguage():
-    """ Configure language for audio
+def configLanguage():
+    """ Configure language for audio/search
     """
     global language
     #
@@ -385,13 +385,13 @@ def search():
     choice = input("o/n/a: ")
     print('Search "{0}" in '.format(kw))
     if (choice == 'o' or choice == 'O'):
-        results = search_OT(kw)
+        results = search_OT(kw, language)
         print('Old testament:')
     elif (choice == 'n' or choice == 'N'):
-        results = search_NT(kw)
+        results = search_NT(kw, language)
         print('New testament:')
     else: # all other cases: including (choice == 'a' or choice == 'A'):
-        results = search_ALL(kw)
+        results = search_ALL(kw, language)
         print('All books:')
     for piece in results:
         book, chapter, verses = piece
@@ -412,7 +412,7 @@ def main():
     N/n List books in new testament
     D/d Display a book/chapter/verse in the bible
     A/a Audio a book/chapter/verse in the bible
-    L/l Configure Audio language
+    L/l Configure language for audio/search
     S/s Search
     T/t Tests
     E/e. Exit
@@ -427,8 +427,8 @@ def main():
         'n': listNTbooks,
         'D': displayText,
         'd': displayText,
-        'L': configAudioLanguage,
-        'l': configAudioLanguage,
+        'L': configLanguage,
+        'l': configLanguage,
         'S': search,
         's': search,
         'T': testAll,
@@ -472,7 +472,7 @@ for book in bible.keys():
 #        
 # -----------------------------------------------------------------------------
 
-#   set default audio language is zh-TW
+#   set default audio/search language is zh-TW
 language = 'zh-TW'
 
 if __name__ == "__main__":
