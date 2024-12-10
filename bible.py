@@ -23,7 +23,9 @@ import pickle
 import random, re
 from pathlib import Path
 
-from gtts import gTTS 
+from gtts import gTTS
+import edge_tts
+
 try:
     import icecream
     ic = icecream.ic
@@ -126,15 +128,15 @@ def display_verse(book, chapter, verse):
     print ("{0}".format(bible[book][chapter][verse]))
     print ("{0}\n".format(cbible[book][chapter][verse]))
 
-def audio_book(book, language='zh-TW', playAudio=False):
+def audio_book(book, language='zh-TW', engine='edge-tts', playAudio=False):
     """ Convert a book to audio files 
     """
     #global bible, cbible, chapsInBook
     for chapter in range(1, chapsInBook[book]+1):
         ic(book, chapter)
-        audio_chapter(book, chapter, language, playAudio)
+        audio_chapter(book, chapter, language, engine, playAudio)
 
-def audio_chapter(book, chapter, language='zh-TW', playAudio=True):
+def audio_chapter(book, chapter, language='zh-TW', engine='edge-tts', playAudio=True):
     """ Convert a chapter in a book to audio, and
             play it if choose so. 
     """
@@ -158,11 +160,11 @@ def audio_chapter(book, chapter, language='zh-TW', playAudio=True):
     audioFile = Path(fileName)
     #   create audio file only if it does not exits
     if ( not audioFile.exists() ):
-        text2Audio(title+text, fileName, language)
+        text2Audio(title+text, fileName, language, engine)
     if ( playAudio ):
         playAudioFile(fileName, platform.system())
 
-def audio_verse(book, chapter, verse, language='zh-TW'):
+def audio_verse(book, chapter, verse, language='zh-TW', engine='edge-tts'):
     """ Play audio of a verse in the bible 
     """
     #global bible, cbible
@@ -181,14 +183,28 @@ def audio_verse(book, chapter, verse, language='zh-TW'):
     audioFile = Path(fileName)
     #   create audio file only if it does not exits
     if ( not audioFile.exists() ):
-        text2Audio(text, fileName, language)
+        text2Audio(text, fileName, language, engine)
     playAudioFile(fileName, platform.system())
 
-def text2Audio(text, fileName, language='zh-TW'):
-    # Create an instance of gTTS class 
-    audioObj = gTTS(text=text, lang=language, lang_check=False)
-    # Method to create your audio file in mp3 format
-    audioObj.save(fileName)
+def text2Audio(text, fileName, language='zh-TW', engine='edge-tts'):
+    """
+        text to audio based on:
+            1. edge-tts/MS, or
+            2. gtts/google
+    """
+    if engine == 'gtts':
+        # Create an instance of gTTS class
+        audioObj = gTTS(text=text, lang=language, lang_check=False)
+        # Method to create your audio file in mp3 format
+        audioObj.save(fileName)
+    else:   #   edge-tts
+        if language == 'zh-TW':
+            voice = 'zh-TW-HsiaoChenNeural'
+        else:
+            voice = 'en-US-AriaNeural'
+        communicate = edge_tts.Communicate(text, voice)
+        communicate.save_sync(fileName)
+        
 
 def playAudioFile(fileName, osType):
     """ Play audio fileName using OS features
@@ -341,7 +357,7 @@ def audioText():
     #
     _tmp = input("Input chapter no. in the book: ")
     if (_tmp == ''):                # no chapter is entered
-        audio_book(book, language)              # display book
+        audio_book(book, language, engine)              # display book
         return
     else:
         chapter = int(_tmp)         # chapter must be OK, all error goes to 1
@@ -355,11 +371,11 @@ def audioText():
         else:                       # chapter OK, then input verse
             _tmp = input("Input the verse no.: ")
             if (_tmp == ''):        # no verse is entered
-                audio_chapter(book, chapter, language)  # audio book+chapter
+                audio_chapter(book, chapter, language, engine)  # audio book+chapter
             else:                   # verse OK?
                 verse = int(_tmp)
                 ic(book, chapter, verse)
-                audio_verse(book, chapter, verse, language)
+                audio_verse(book, chapter, verse, language, engine)
                     
 def configLanguage():
     """ Configure language for audio/search
@@ -369,12 +385,26 @@ def configLanguage():
     #   select language:
     #       two for now:    zh-TW, or en
     #
-    _tmp = input("Input langugae: 1 for zh-TW, or 2 for en: ")
+    _tmp = input("Select langugae: 1 for zh-TW, or 2 for en: ")
     if ( _tmp == '2' ):
         language = 'en'
     else:                   # default to zh-TW
         language = 'zh-TW'
-       
+
+def configEngine():
+    """ Configure tts engine
+    """
+    global engine
+    #
+    #   select engine:
+    #       two for now:    gtts or edge-tts
+    #
+    _tmp = input("Select tts Engine: 1 for edge-tts/MS, or 2 for gtts/google: ")
+    if ( _tmp == '2' ):
+        engine = 'gtts'
+    else:
+        engine = 'edge-tts'
+
 def search():
     kw = input("Input search key words: ")
     print("""
@@ -413,6 +443,7 @@ def main():
     D/d Display a book/chapter/verse in the bible
     A/a Audio a book/chapter/verse in the bible
     L/l Configure language for audio/search
+    G/g Configure text-to-speak engine
     S/s Search
     T/t Tests
     E/e. Exit
@@ -429,6 +460,8 @@ def main():
         'd': displayText,
         'L': configLanguage,
         'l': configLanguage,
+        'G': configEngine,
+        'g': configEngine,
         'S': search,
         's': search,
         'T': testAll,
@@ -472,8 +505,11 @@ for book in bible.keys():
 #        
 # -----------------------------------------------------------------------------
 
-#   set default audio/search language is zh-TW
+#   set default audio/search language to: zh-TW
 language = 'zh-TW'
+
+#   set default tts engine to: edge-tts
+engine = 'edge-tts'
 
 if __name__ == "__main__":
     main()
