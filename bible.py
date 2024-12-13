@@ -199,7 +199,7 @@ def text2Audio(text, fileName, language='zh-TW', engine='edge-tts'):
         audioObj.save(fileName)
     else:   #   edge-tts
         if language == 'zh-TW':
-            voice = 'zh-TW-HsiaoChenNeural'
+            voice = 'zh-TW-HsiaoYuNeural'
         else:
             voice = 'en-US-AriaNeural'
         communicate = edge_tts.Communicate(text, voice)
@@ -264,10 +264,10 @@ def test1():
     
 def test_search():
     """ test on search functions """
-    
+
     # test of search on book John chapter 3
     print("\ntest of search on word 'God' in John chapter 3")
-    results = search_key('John', 3, 'God')
+    results = search_key('John', 3, 'God', 'en')
     print(results)
     book, chapter, verses = results
     for verse in verses:
@@ -275,7 +275,7 @@ def test_search():
         print('{0} {1}:{2} \n{3}\n'.format (book, chapter, verse, cbible[book][chapter][verse]))
     # test of search on OT
     print("\ntest of search on word 'what wilt thou' in OT")
-    results = search_OT('what wilt thou')
+    results = search_OT('what wilt thou', 'en')
     for piece in results:
         book, chapter, verses = piece
         for verse in verses:
@@ -283,7 +283,7 @@ def test_search():
             print('{0} {1}:{2} \n{3}\n'.format(book, chapter, verse, cbible[book][chapter][verse]))
     # test of search on NT
     print("\ntest of search on word 'what wilt thou' in NT")
-    results = search_NT('what wilt thou')
+    results = search_NT('what wilt thou', 'en')
     for piece in results:
         book, chapter, verses = piece
         for verse in verses:
@@ -443,38 +443,28 @@ def main():
     D/d Display a book/chapter/verse in the bible
     A/a Audio a book/chapter/verse in the bible
     L/l Configure language for audio/search
-    G/g Configure text-to-speak engine
+    E/e Configure text-to-speak engine
     S/s Search
     T/t Tests
-    E/e. Exit
+    Q/q. Exit
     """
 
-    menu = {
-        'A': audioText,
-        'a': audioText,
-        'O': listOTbooks,
-        'o': listOTbooks,
-        'N': listNTbooks,
-        'n': listNTbooks,
-        'D': displayText,
-        'd': displayText,
-        'L': configLanguage,
-        'l': configLanguage,
-        'G': configEngine,
-        'g': configEngine,
-        'S': search,
-        's': search,
-        'T': testAll,
-        't': testAll,
-        'E': quit,
-        'e': quit,                                                                
-    }
-
     while True:
-        print(f"\n  Audio language selected: {language}")
+        print(f"\n  Audio/Search language selected: {language}")
+        print(f"  Text-to-Speek engine selected:  {engine}")
         print(PROMPT) 
         choice = input("Your choice: ")
-        menu[choice]()
+        match choice:
+            case 'A' | 'a': audioText()
+            case 'O' | 'o': listOTbooks()
+            case 'N' | 'n': listNTbooks()
+            case 'D' | 'd': displayText()
+            case 'L' | 'l': configLanguage()
+            case 'E' | 'e': configEngine()
+            case 'S' | 's': search()
+            case 'T' | 't': testAll()
+            case 'Q' | 'q': quit()
+            case _: continue
 
 # -----------------------------------------------------------------------------
 #
