@@ -18,13 +18,10 @@ July 5, 2021
 
 """
 
-import os, platform, sys, time
+import os, platform, sys
 import pickle
 import random, re
 from pathlib import Path
-
-from gtts import gTTS
-import edge_tts
 
 try:
     import icecream
@@ -192,12 +189,27 @@ def text2Audio(text, fileName, language='zh-TW', engine='edge-tts'):
             1. edge-tts/MS, or
             2. gtts/google
     """
+    missing_tts_engine = False
     if engine == 'gtts':
-        # Create an instance of gTTS class
+        try:
+            from gtts import gTTS
+        except ImportError:
+            missing_tts_engine = True
+        if missing_tts_engine:
+            print(f"\n !!! No TTS engine installed !!!")
+            print(f"     !!!! Please install gtts !!!!\n")
+            return None
         audioObj = gTTS(text=text, lang=language, lang_check=False)
-        # Method to create your audio file in mp3 format
         audioObj.save(fileName)
     else:   #   edge-tts
+        try:
+            import edge_tts
+        except ImportError:
+            missing_tts_engine = True
+        if missing_tts_engine:
+            print(f"\n !!! No TTS engine installed !!!")
+            print(f"     !!!! Please install edge-tts !!!!\n")
+            return None
         if language == 'zh-TW':
             voice = 'zh-TW-HsiaoYuNeural'
         else:
