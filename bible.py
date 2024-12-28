@@ -35,6 +35,7 @@ try:
 except ImportError:
     ic = print
 
+
 def index_bible():
     """
     
@@ -93,6 +94,7 @@ def isearch_book(book, query_string, language):
     """
     # first parameter to lower
     book = book.lower()
+    query_string = query_string.lower()
 
     #   open the index
     if not os.path.exists(f"indexdir_{language}"):
@@ -103,7 +105,6 @@ def isearch_book(book, query_string, language):
 
     with ix.searcher() as s:
         print(f"\nisearch in English ...")
-        query_string = query_string.lower()
         phrase = query_string.split()
         if len(phrase) > 1:
             q1 = Phrase("content", phrase)
@@ -150,7 +151,6 @@ def icsearch_book(book, query_string, language):
     """
     # first parameter to lower
     book = book.lower()
-    query_string = query_string.lower()
 
     #   open the index
     if not os.path.exists(f"indexdir_{language}"):
@@ -161,7 +161,7 @@ def icsearch_book(book, query_string, language):
 
     print(f"\n\nSearch in Chinese ...\n")
     with ix.searcher() as s:
-        q1 = QueryParser("content", ix.schema).parse(query_string)
+        q1 = Term("content", query_string)
         q2 = Term("tags", book.replace(' ', ''))
         q = And([q1, q2])
 
@@ -196,8 +196,39 @@ def indexSearch():
     義人必因信得生
     """
  
+def t1():
+    kw = input("Input search (Chinese) key words: ")
+    print("""
+    Search in old testament,
+              new testament, or
+              all books
+    """)
+    choice = input("o/n/a: ")
+    if (choice == 'o' or choice == 'O'):
+        book = 'oldtestament'
+    elif (choice == 'n' or choice == 'N'):
+        book = 'newtestament'
+    else: # all other cases: including (choice == 'a' or choice == 'A'):
+        book = 'allbooks'
+    print(f'Search "{kw}" in {book} ...')
+    icsearch_book(book, kw, 'zh-TW')
 
-
+def t2():
+    kw = input("Input search (English) key words: ")
+    print("""
+    Search in old testament,
+              new testament, or
+              all books
+    """)
+    choice = input("o/n/a: ")
+    if (choice == 'o' or choice == 'O'):
+        book = 'oldtestament'
+    elif (choice == 'n' or choice == 'N'):
+        book = 'newtestament'
+    else: # all other cases: including (choice == 'a' or choice == 'A'):
+        book = 'allbooks'
+    print(f'Search "{kw}" in {book} ...')
+    isearch_book(book, kw, 'en')
 
 def random_verse(bible, book=False):
   if not book:
@@ -649,6 +680,8 @@ def main():
             case 'L' | 'l': configLanguage()
             case 'E' | 'e': configEngine()
             case 'Z' | 'z': indexSearch()
+            case '1':       t1()
+            case '2':       t2()
             case 'Q' | 'q': quit()
             case _: continue
 
