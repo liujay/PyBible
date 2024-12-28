@@ -23,11 +23,181 @@ import pickle
 import random, re
 from pathlib import Path
 
+from whoosh.fields import Schema, TEXT, KEYWORD, STORED
+from whoosh.filedb.filestore import FileStorage
+from whoosh.qparser import QueryParser, MultifieldParser
+from whoosh.query import *
+
+
 try:
     import icecream
     ic = icecream.ic
 except ImportError:
     ic = print
+
+def index_bible():
+    """
+    
+    """
+
+    #
+    #   define schema
+    #
+    if language == 'zh-TW':
+        from jieba.analyse import ChineseAnalyzer
+        analyzer = ChineseAnalyzer()
+        schema = Schema(
+            id=STORED,
+            content=TEXT(phrase=True, stored=True, analyzer=analyzer),
+            tags=TEXT(stored=True)
+        )
+    else:
+        schema = Schema(
+            id=STORED,
+            content=TEXT(phrase=True, stored=True),
+            tags=TEXT(stored=True)
+        )
+
+    #   create index
+    if not os.path.exists(f"indexdir_{language}"):
+        os.mkdir(f"indexdir_{language}")        
+    storage = FileStorage(f"indexdir_{language}")
+    # Create an index
+    ix = storage.create_index(schema)
+
+    #
+    #   real indexing
+    #
+    writer = ix.writer()
+
+    bibletoUse = selectBible(language)
+    #       loop over all books
+    for book in ALLbooks:
+        if book in OTbooks:
+            mytag = f"{book.replace(' ', '')}, OldTestament, AllBooks"
+        else:
+            mytag = f"{book.replace(' ', '')}, NewTestament, AllBooks"
+        print(f"\nindexing {mytag} ...")
+        for chapter in range(1, chapsInBook[book]+1):
+            for verse in range(1, len(bibletoUse[book][chapter])+1):
+                writer.add_document(
+                    id = f"{book.replace(' ', '')} {chapter}:{verse}",
+                    content = bibletoUse[book][chapter][verse],
+                    tags = mytag 
+                )
+    writer.commit()    
+
+def isearch_book(book, query_string, language):
+    """
+    
+    """
+    # first parameter to lower
+    book = book.lower()
+
+    #   open the index
+    if not os.path.exists(f"indexdir_{language}"):
+        print(f"\n!!! No index dir found, I'm quitting ... !!!\n")
+        sys.exit(99)        
+    storage = FileStorage(f"indexdir_{language}")
+    ix = storage.open_index()
+
+    with ix.searcher() as s:
+        print(f"\nisearch in English ...")
+        query_string = query_string.lower()
+        phrase = query_string.split()
+        if len(phrase) > 1:
+            q1 = Phrase("content", phrase)
+        else: 
+            q1 = Term("content", query_string.strip())
+        print(f"\ntype of q1: {type(q1)}")
+        print(f"q1: {q1}")
+        
+        q2 = Term("tags", book.replace(' ', ''))
+        print(f"\ntype of q2: {type(q2)}")
+        print(f"q2: {q2}")
+        
+        q = q1
+        my_filter = q2
+        print(f"\nsearch on {q}")
+        results = s.search(q, limit=20)
+        print(f"\nsearch on {q} with filter: {my_filter}")
+        f_results = s.search(q, filter=my_filter, limit=20)
+
+        q3 = Term("tags", 'newtestament')
+        q_test = And([q1, q3])
+        print(f"\nsearch on {q_test}\n")
+        t_results = s.search(q_test, limit=20)
+    
+        print(f"Isearch Results: {results}")
+        print(f"length of results: {len(results)}")
+        print(f"length of filtered-results: {len(f_results)}")
+        #print(f"\ntype of results: {type(results)}\n")
+        #print(f"\nDir of results: {dir(results)}\n")
+        print(f"\nResults:")
+        for index, r in enumerate(results):
+            print(f"{index+1:4}: {r['id']} -- {r['content']} ++ {r['tags']}")
+        print(f"\nFiltered-Results:")
+        for index, r in enumerate(f_results):
+            print(f"{index+1:4}: {r['id']} -- {r['content']} ++ {r['tags']}")
+
+        print(f"\nTest-Results:")
+        for index, r in enumerate(t_results):
+            print(f"{index+1:4}: {r['id']} -- {r['content']} ++ {r['tags']}")
+
+def icsearch_book(book, query_string, language):
+    """
+    
+    """
+    # first parameter to lower
+    book = book.lower()
+    query_string = query_string.lower()
+
+    #   open the index
+    if not os.path.exists(f"indexdir_{language}"):
+        print(f"\n!!! No index dir found, I'm quitting ... !!!\n")
+        sys.exit(99)        
+    storage = FileStorage(f"indexdir_{language}")
+    ix = storage.open_index()
+
+    print(f"\n\nSearch in Chinese ...\n")
+    with ix.searcher() as s:
+        q1 = QueryParser("content", ix.schema).parse(query_string)
+        q2 = Term("tags", book.replace(' ', ''))
+        q = And([q1, q2])
+
+        results = s.search(q, limit=1000)
+        print(f"Isearch Results: {results}")
+        print(f"\nResults:")
+        total = len(results)
+        print(f"!!! Found {total} entries in {book} !!!")
+        if total > 20:
+            print(f"Here are the first 20 entries:")
+            for index, r in enumerate(results[:20]):
+                print(f"{index+1:4}: {r['id']} -- {r['content']} ++ {r['tags']}")
+        else:
+            print(f"Here are entries found:")
+            for index, r in enumerate(results):
+                print(f"{index+1:4}: {r['id']} -- {r['content']} ++ {r['tags']}")
+
+def indexSearch():
+    """
+    
+    """
+
+    # test of search on book John chapter 3
+    print("\nStarting indexSearch ...\n")
+    #isearch_book('allbooks', u'what wilt thou', 'en')
+    isearch_book('Romans', u'God forbid', 'en')
+    isearch_book('Romans', u'faith', 'en')
+    #icsearch_book('allbooks', u'義人必因信得生', 'zh-TW')
+
+    """
+    神愛世人  亞伯拉罕  耶穌基督
+    義人必因信得生
+    """
+ 
+
+
 
 def random_verse(bible, book=False):
   if not book:
@@ -456,6 +626,8 @@ def main():
     A/a Audio a book/chapter/verse in the bible
     L/l Configure language for audio/search
     E/e Configure text-to-speak engine
+    I/i Index bible for search
+    Z/z New Search using index
     S/s Search
     T/t Tests
     Q/q. Exit
@@ -471,10 +643,12 @@ def main():
             case 'O' | 'o': listOTbooks()
             case 'N' | 'n': listNTbooks()
             case 'D' | 'd': displayText()
-            case 'L' | 'l': configLanguage()
-            case 'E' | 'e': configEngine()
             case 'S' | 's': search()
             case 'T' | 't': testAll()
+            case 'I' | 'i': index_bible()
+            case 'L' | 'l': configLanguage()
+            case 'E' | 'e': configEngine()
+            case 'Z' | 'z': indexSearch()
             case 'Q' | 'q': quit()
             case _: continue
 
@@ -508,7 +682,7 @@ for book in bible.keys():
 # -----------------------------------------------------------------------------
 
 #   set default audio/search language to: zh-TW
-language = 'zh-TW'
+language = 'en'
 
 #   set default tts engine to: edge-tts
 engine = 'edge-tts'
