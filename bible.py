@@ -145,7 +145,7 @@ def isearch_book(book, query_string, language):
         for index, r in enumerate(t_results):
             print(f"{index+1:4}: {r['id']} -- {r['content']} ++ {r['tags']}")
 
-def icsearch_book(book, query_string, language):
+def iCsearch_book(book, query_string, language):
     """
     
     """
@@ -166,7 +166,7 @@ def icsearch_book(book, query_string, language):
         q = And([q1, q2])
 
         results = s.search(q, limit=1000)
-        print(f"Isearch Results: {results}")
+        print(f"iCsearch Results: {results}")
         print(f"\nResults:")
         total = len(results)
         print(f"!!! Found {total} entries in {book} !!!")
@@ -184,24 +184,19 @@ def indexSearch():
     
     """
 
-    # test of search on book John chapter 3
-    print("\nStarting indexSearch ...\n")
-    #isearch_book('allbooks', u'what wilt thou', 'en')
-    isearch_book('Romans', u'God forbid', 'en')
-    isearch_book('Romans', u'faith', 'en')
-    #icsearch_book('allbooks', u'義人必因信得生', 'zh-TW')
-
     """
     神愛世人  亞伯拉罕  耶穌基督
     義人必因信得生
     """
  
-def t1():
-    kw = input("Input search (Chinese) key words: ")
+    if language == "zh-TW":
+        kw = input("Input search (Chinese) key words: ")
+    else:
+        kw = input("Input search (English) key words: ")
     print("""
     Search in old testament,
-              new testament, or
-              all books
+            new testament, or
+            all books
     """)
     choice = input("o/n/a: ")
     if (choice == 'o' or choice == 'O'):
@@ -211,24 +206,11 @@ def t1():
     else: # all other cases: including (choice == 'a' or choice == 'A'):
         book = 'allbooks'
     print(f'Search "{kw}" in {book} ...')
-    icsearch_book(book, kw, 'zh-TW')
-
-def t2():
-    kw = input("Input search (English) key words: ")
-    print("""
-    Search in old testament,
-              new testament, or
-              all books
-    """)
-    choice = input("o/n/a: ")
-    if (choice == 'o' or choice == 'O'):
-        book = 'oldtestament'
-    elif (choice == 'n' or choice == 'N'):
-        book = 'newtestament'
-    else: # all other cases: including (choice == 'a' or choice == 'A'):
-        book = 'allbooks'
-    print(f'Search "{kw}" in {book} ...')
-    isearch_book(book, kw, 'en')
+    # make call
+    if language == "zh-TW":
+        iCsearch_book(book, kw, 'zh-TW')
+    else:
+        isearch_book(book, kw, 'en')
 
 def random_verse(bible, book=False):
   if not book:
@@ -260,6 +242,11 @@ def search_booklist(bookList, kw, language='zh-TW'):
         for chapter in range(1, chapsInBook[book]+1):
             _result = search_key(book, chapter, kw, language)
             result.append(_result)
+    print(f"\n --- ---")
+    print(result)
+    print(f" ^^^ ^^^\n")
+    #   trim all empty verse list
+    result = [x for x in result if len(x[2]) > 0]
     return result
     
 def search_OT(kw, language='zh-TW'):
@@ -629,13 +616,20 @@ def search():
     print('Search "{0}" in '.format(kw))
     if (choice == 'o' or choice == 'O'):
         results = search_OT(kw, language)
-        print('Old testament:')
+        print('Old testament:\n')
     elif (choice == 'n' or choice == 'N'):
         results = search_NT(kw, language)
-        print('New testament:')
+        print('New testament:\n')
     else: # all other cases: including (choice == 'a' or choice == 'A'):
         results = search_ALL(kw, language)
-        print('All books:')
+        print('All books:\n')
+    #   a summary of results
+    total = 0
+    for r in results:
+        total += len(r[2])
+    print(f" --- Results: found {total} verses---")
+    print(results)
+    print(f" ^^^^^ A total of {total} verses ^^^^^\n")
     for piece in results:
         book, chapter, verses = piece
         for verse in verses:
