@@ -186,6 +186,7 @@ def indexSearch():
 
     """
     神愛世人  亞伯拉罕  耶穌基督
+    神的旨意
     義人必因信得生
     """
  
@@ -609,20 +610,31 @@ def search():
     kw = input("Input search key words: ")
     print("""
     Search in old testament,
-              new testament, or
-              all books
+              new testament,
+              all books, or
+              a specific book in the format of 'b bookname'
     """)
-    choice = input("o/n/a: ")
-    print('Search "{0}" in '.format(kw))
-    if (choice == 'o' or choice == 'O'):
-        results = search_OT(kw, language)
-        print('Old testament:\n')
-    elif (choice == 'n' or choice == 'N'):
-        results = search_NT(kw, language)
-        print('New testament:\n')
-    else: # all other cases: including (choice == 'a' or choice == 'A'):
-        results = search_ALL(kw, language)
-        print('All books:\n')
+    choice = input("o/n/a/b+book: ")
+    match choice:
+        case 'O' | 'o':
+            results = search_OT(kw, language)
+            print('Old testament:\n')         
+        case 'N' | 'n':
+            results = search_NT(kw, language)
+            print('New testament:\n')
+        case 'A' | 'a':
+            results = search_ALL(kw, language)
+            print('All books:\n')
+        case _:
+            _choice, book = choice.split(' ', maxsplit=1)
+            if (_choice == 'B' or _choice == 'b') and book in ALLbooks:
+                results = search_booklist([book], kw, language)
+                print(f"Book: {book}")
+            else:
+                print(f"\n!!! Invalid choice !!!\n")
+                bibletoUse = cbible if language == 'zh-TW' else bible
+                print(random_verse(bibletoUse))
+                return
     #   a summary of results
     total = 0
     for r in results:
@@ -674,8 +686,6 @@ def main():
             case 'L' | 'l': configLanguage()
             case 'E' | 'e': configEngine()
             case 'Z' | 'z': indexSearch()
-            case '1':       t1()
-            case '2':       t2()
             case 'Q' | 'q': quit()
             case _: continue
 
@@ -709,7 +719,7 @@ for book in bible.keys():
 # -----------------------------------------------------------------------------
 
 #   set default audio/search language to: zh-TW
-language = 'en'
+language = 'zh-TW'
 
 #   set default tts engine to: edge-tts
 engine = 'edge-tts'
