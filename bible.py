@@ -194,18 +194,30 @@ def indexSearch():
         kw = input("Input search (Chinese) key words: ")
     else:
         kw = input("Input search (English) key words: ")
+    
     print("""
     Search in old testament,
-            new testament, or
-            all books
+              new testament,
+              all books, or
+              a specific book in the format of 'b bookname'
     """)
-    choice = input("o/n/a: ")
-    if (choice == 'o' or choice == 'O'):
-        book = 'oldtestament'
-    elif (choice == 'n' or choice == 'N'):
-        book = 'newtestament'
-    else: # all other cases: including (choice == 'a' or choice == 'A'):
-        book = 'allbooks'
+    choice = input("o/n/a/b+book: ")
+    match choice:
+        case 'O' | 'o':
+            book = 'oldtestament'            
+        case 'N' | 'n':
+            book = 'newtestament'
+        case 'A' | 'a':
+            book = 'allbooks'
+        case _:
+            _choice, book = choice.split(' ', maxsplit=1)
+            if (_choice == 'B' or _choice == 'b') and book in ALLbooks:
+                book = book.replace(' ', '')
+            else:
+                print(f"\n!!! Invalid choice !!!\n")
+                bibletoUse = cbible if language == 'zh-TW' else bible
+                print(random_verse(bibletoUse))
+                return
     print(f'Search "{kw}" in {book} ...')
     # make call
     if language == "zh-TW":
