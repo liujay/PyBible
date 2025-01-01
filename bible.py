@@ -18,6 +18,7 @@ July 5, 2021
 
 """
 
+import math
 import os, platform, sys
 import pickle
 import random, re
@@ -170,14 +171,24 @@ def iCsearch_book(book, query_string, language):
         print(f"\nResults:")
         total = len(results)
         print(f"!!! Found {total} entries in {book} !!!")
-        if total > 20:
-            print(f"Here are the first 20 entries:")
-            for index, r in enumerate(results[:20]):
-                print(f"{index+1:4}: {r['id']} -- {r['content']} ++ {r['tags']}")
-        else:
-            print(f"Here are entries found:")
-            for index, r in enumerate(results):
-                print(f"{index+1:4}: {r['id']} -- {r['content']} ++ {r['tags']}")
+        numPages = math.ceil(total/numberPerPage)
+        #   page 1 to numPages-1
+        for page in range(1, numPages):
+            print(f"\nPage # {page}\n")  
+            for entry in range(0, numberPerPage):
+                #   compute index of entry that lives in page
+                index = (page-1) * numberPerPage + entry
+                r = results[index]
+                print(f"{r['id']} -- {r['content']}")
+            cont = input("\nnext page y/n: ")
+            if cont == 'n' or cont == 'N':
+                return
+        if total - index > 1:
+            #   last page
+            print(f"\nPage # {numPages}\n")  
+            for index in range(numberPerPage*(numPages-1), total):  
+                r = results[index]
+                print(f"{r['id']} -- {r['content']}")
 
 def indexSearch():
     """
@@ -735,6 +746,9 @@ language = 'zh-TW'
 
 #   set default tts engine to: edge-tts
 engine = 'edge-tts'
+
+#   set default number of entries per page
+numberPerPage = 10
 
 if __name__ == "__main__":
     main()
