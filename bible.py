@@ -659,17 +659,7 @@ def search():
                     break
                 else:
                     page = page + 1
-                    print(f"\nPage # {page}\n")
-
-
-    """
-    for piece in results:
-        book, chapter, verses = piece
-        for verse in verses:
-            print('{0} {1}:{2} \n{3}'.format(book, chapter, verse, bible[book][chapter][verse]))
-            print('{0} {1}:{2} \n{3}\n'.format(book, chapter, verse, cbible[book][chapter][verse]))
-    """
-     
+                    print(f"\nPage # {page}\n")   
     
 def testAll():
     test0()
@@ -682,12 +672,12 @@ def main():
     O/o List books in old testament
     N/n List books in new testament
     D/d Display a book/chapter/verse in the bible
+    S/s Search
     A/a Audio a book/chapter/verse in the bible
     L/l Configure language for audio/search
     E/e Configure text-to-speak engine
     I/i Index bible for search
     Z/z New Search using index
-    S/s Search
     T/t Tests
     Q/q. Exit
     """
