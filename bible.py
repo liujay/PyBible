@@ -113,38 +113,27 @@ def isearch_book(book, query_string, language):
             q1 = Term("content", query_string.strip())
         print(f"\ntype of q1: {type(q1)}")
         print(f"q1: {q1}")
-        
         q2 = Term("tags", book.replace(' ', ''))
         print(f"\ntype of q2: {type(q2)}")
         print(f"q2: {q2}")
-        
-        q = q1
-        my_filter = q2
-        print(f"\nsearch on {q}")
-        results = s.search(q, limit=20)
-        print(f"\nsearch on {q} with filter: {my_filter}")
-        f_results = s.search(q, filter=my_filter, limit=20)
-
-        q3 = Term("tags", 'newtestament')
-        q_test = And([q1, q3])
-        print(f"\nsearch on {q_test}\n")
-        t_results = s.search(q_test, limit=20)
-    
-        print(f"Isearch Results: {results}")
-        print(f"length of results: {len(results)}")
-        print(f"length of filtered-results: {len(f_results)}")
-        #print(f"\ntype of results: {type(results)}\n")
-        #print(f"\nDir of results: {dir(results)}\n")
+        results = s.search(q1, filter=q2, limit=1000)
+        print(f"isearch Results: {results}")
         print(f"\nResults:")
-        for index, r in enumerate(results):
-            print(f"{index+1:4}: {r['id']} -- {r['content']} ++ {r['tags']}")
-        print(f"\nFiltered-Results:")
-        for index, r in enumerate(f_results):
-            print(f"{index+1:4}: {r['id']} -- {r['content']} ++ {r['tags']}")
+        total = len(results)
+        print(f"!!! Found {total} verses in {book} !!!")
+        page = 1
+        print(f"\nPage # {page}\n")  
+        for index in range(0, total):
+            r = results[index]
+            print(f"{r['id']} -- {r['content']}\n")
+            if (index + 1) % numberPerPage == 0 and (index+1) != total:
+                cont = input("continue y/n: ")
+                if cont == 'n' or cont == 'N':
+                    break
+                else:
+                    page = page + 1
+                    print(f"\nPage # {page}\n")  
 
-        print(f"\nTest-Results:")
-        for index, r in enumerate(t_results):
-            print(f"{index+1:4}: {r['id']} -- {r['content']} ++ {r['tags']}")
 
 def iCsearch_book(book, query_string, language):
     """
@@ -170,25 +159,19 @@ def iCsearch_book(book, query_string, language):
         print(f"iCsearch Results: {results}")
         print(f"\nResults:")
         total = len(results)
-        print(f"!!! Found {total} entries in {book} !!!")
-        numPages = math.ceil(total/numberPerPage)
-        #   page 1 to numPages-1
-        for page in range(1, numPages):
-            print(f"\nPage # {page}\n")  
-            for entry in range(0, numberPerPage):
-                #   compute index of entry that lives in page
-                index = (page-1) * numberPerPage + entry
-                r = results[index]
-                print(f"{r['id']} -- {r['content']}")
-            cont = input("\nnext page y/n: ")
-            if cont == 'n' or cont == 'N':
-                return
-        if total - index > 1:
-            #   last page
-            print(f"\nPage # {numPages}\n")  
-            for index in range(numberPerPage*(numPages-1), total):  
-                r = results[index]
-                print(f"{r['id']} -- {r['content']}")
+        print(f"!!! Found {total} verses in {book} !!!")
+        page = 1
+        print(f"\nPage # {page}\n")  
+        for index in range(0, total):
+            r = results[index]
+            print(f"{r['id']} -- {r['content']}")
+            if (index + 1) % numberPerPage == 0 and (index+1) != total:
+                cont = input("continue y/n: ")
+                if cont == 'n' or cont == 'N':
+                    break
+                else:
+                    page = page + 1
+                    print(f"\nPage # {page}\n")  
 
 def indexSearch():
     """
@@ -266,9 +249,6 @@ def search_booklist(bookList, kw, language='zh-TW'):
         for chapter in range(1, chapsInBook[book]+1):
             _result = search_key(book, chapter, kw, language)
             result.append(_result)
-    print(f"\n --- ---")
-    print(result)
-    print(f" ^^^ ^^^\n")
     #   trim all empty verse list
     result = [x for x in result if len(x[2]) > 0]
     return result
@@ -640,14 +620,14 @@ def search():
     choice = input("o/n/a/b+book: ")
     match choice:
         case 'O' | 'o':
+            book = "Old testament"
             results = search_OT(kw, language)
-            print('Old testament:\n')         
         case 'N' | 'n':
+            book = "New testament"
             results = search_NT(kw, language)
-            print('New testament:\n')
         case 'A' | 'a':
+            book = "All books"
             results = search_ALL(kw, language)
-            print('All books:\n')
         case _:
             _choice, book = choice.split(' ', maxsplit=1)
             if (_choice == 'B' or _choice == 'b') and book in ALLbooks:
@@ -662,15 +642,34 @@ def search():
     total = 0
     for r in results:
         total += len(r[2])
-    print(f" --- Results: found {total} verses---")
-    print(results)
-    print(f" ^^^^^ A total of {total} verses ^^^^^\n")
+    print(f" !!! Results: found {total} verses in '{book}' !!!")
+    page = 1
+    index = -1
+    print(f"\nPage # {page}\n")  
+    for r in results:
+        book, chapter, verses = r
+        for verse in verses:
+            print('{0} {1}:{2} \n{3}'.format(book, chapter, verse, bible[book][chapter][verse]))
+            print('{0} {1}:{2} \n{3}\n'.format(book, chapter, verse, cbible[book][chapter][verse]))
+            index = index + 1
+            #   check for page break
+            if (index + 1) % numberPerPage == 0 and (index+1) != total:
+                cont = input("continue y/n: ")
+                if cont == 'n' or cont == 'N':
+                    break
+                else:
+                    page = page + 1
+                    print(f"\nPage # {page}\n")
+
+
+    """
     for piece in results:
         book, chapter, verses = piece
         for verse in verses:
             print('{0} {1}:{2} \n{3}'.format(book, chapter, verse, bible[book][chapter][verse]))
             print('{0} {1}:{2} \n{3}\n'.format(book, chapter, verse, cbible[book][chapter][verse]))
-        
+    """
+     
     
 def testAll():
     test0()
