@@ -18,7 +18,6 @@ July 5, 2021
 
 """
 
-import math
 import os, platform, sys
 import pickle
 import random, re
@@ -39,7 +38,9 @@ except ImportError:
 
 def index_bible():
     """
-    
+    create index for indexed search
+        ChineseAnalyzer from jieba is used as analyzer
+        default for english
     """
 
     #
@@ -91,7 +92,7 @@ def index_bible():
 
 def isearch_book(book, query_string, language):
     """
-    
+    indexed search for English within book list (as filter)
     """
     # first parameter to lower
     book = book.lower()
@@ -132,12 +133,12 @@ def isearch_book(book, query_string, language):
                     break
                 else:
                     page = page + 1
-                    print(f"\nPage # {page}\n")  
+                    print(f"\nPage # {page}\n")
 
 
 def iCsearch_book(book, query_string, language):
     """
-    
+    indexed search for Chinese within book list (as 2nd Term in query)
     """
     # first parameter to lower
     book = book.lower()
@@ -175,13 +176,14 @@ def iCsearch_book(book, query_string, language):
 
 def indexSearch():
     """
-    
+    top level indexed search
     """
 
     """
-    神愛世人  亞伯拉罕  耶穌基督
-    神的旨意
-    義人必因信得生
+    Some key words in Chinese:
+        神愛世人  亞伯拉罕  耶穌基督
+        神的旨意
+        義人必因信得生
     """
  
     if language == "zh-TW":
@@ -213,7 +215,7 @@ def indexSearch():
                 print(random_verse(bibletoUse))
                 return
     print(f'Search "{kw}" in {book} ...')
-    # make call
+    # do the task -- make call
     if language == "zh-TW":
         iCsearch_book(book, kw, 'zh-TW')
     else:
@@ -228,10 +230,13 @@ def random_verse(bible, book=False):
 
 def search_key(book, chapter, kw, language='zh-TW'):
     """ Keyword (kw) search on specified bible[book][chapter]
-    return a list of verses (along with the book and chapter) 
     
-    return list format: [book, chapter, [list of verses]]
+    return a list of verses (along with the book and chapter)
+        which looks like [book, chapter, [list of verses]]
+    ^^^^^ this is different from indexed search, which (as defined by index Schema^ ) is
+            [[id, content, tags]] ^^^^^
     """
+
     bibletoUse = selectBible(language)
     dic = bibletoUse[book][chapter]
     patc = re.compile(kw.lower())
