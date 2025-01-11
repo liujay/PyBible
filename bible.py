@@ -47,6 +47,14 @@ def index_bible():
     #   define schema
     #
     if language == 'zh-TW':
+        try:
+            from jieba.analyse import ChineseAnalyzer
+        except ImportError:
+            missing_jieba = True
+        if missing_jieba:
+            print(f"\n !!! We need ChineseAnalyzer to index Chinese !!!")
+            print(f"     !!!! Please install jieba !!!!\n")
+            return None
         from jieba.analyse import ChineseAnalyzer
         analyzer = ChineseAnalyzer()
         schema = Schema(
