@@ -303,10 +303,11 @@ def display_book(book, halt=True):
     """
     #global bible, cbible, chapsInBook
     for chapter in range(1, chapsInBook[book]+1):
-        print("\n{0} {1}:".format(book, chapter))
+        print(f"\n{book}\t{chapter}:\n")
         for verse in range(1, len(bible[book][chapter])+1):
             print("{0} {1}".format(verse, bible[book][chapter][verse]))
             print("{0} {1}\n".format(verse, cbible[book][chapter][verse]))
+        print(f"^^^^^ {book}\tchapter {chapter} ^^^^^\n")
         if halt and (chapter < chapsInBook[book]):
             input("hit any key to continue")
 
@@ -315,7 +316,7 @@ def display_chapter(book, chapter, halt=False):
     """ Dispaly a chapter in a book 
     """
     #global bible, cbible
-    print("\n{0}\t{1}:\n".format(book, chapter))
+    print(f"\n{book}\t{chapter}:\n")
     for verse in range(1, len(bible[book][chapter])+1):
         print ("{0} {1}".format(verse, bible[book][chapter][verse]))
         try:
@@ -324,6 +325,7 @@ def display_chapter(book, chapter, halt=False):
             ic(f"No verse {book} {chapter}:{verse} in zh-TW bible version")
         if halt:
             input("hit any key to continue")
+    print(f"^^^^^ {book}\tchapter {chapter} ^^^^^\n")
 
 def display_verse(book, chapter, verse):
     """ Dispaly a verse in the bible 
