@@ -23,11 +23,211 @@ import pickle
 import random, re
 from pathlib import Path
 
+from whoosh.fields import Schema, TEXT, KEYWORD, STORED
+from whoosh.filedb.filestore import FileStorage
+from whoosh.qparser import QueryParser, MultifieldParser
+from whoosh.query import *
+
+
 try:
     import icecream
     ic = icecream.ic
 except ImportError:
     ic = print
+
+
+def index_bible():
+    """
+    create index for indexed search
+        ChineseAnalyzer from jieba is used as analyzer
+        default for english
+    """
+
+    #
+    #   define schema
+    #
+    if language == 'zh-TW':
+        missing_jieba = False
+        try:
+            from jieba.analyse import ChineseAnalyzer
+        except ImportError:
+            missing_jieba = True
+        if missing_jieba:
+            print(f"\n !!! We need ChineseAnalyzer to index Chinese !!!")
+            print(f"     !!!! Please install jieba !!!!\n")
+            return None
+        analyzer = ChineseAnalyzer()
+        schema = Schema(
+            id=STORED,
+            content=TEXT(phrase=True, stored=True, analyzer=analyzer),
+            tags=TEXT(stored=True)
+        )
+    else:
+        schema = Schema(
+            id=STORED,
+            content=TEXT(phrase=True, stored=True),
+            tags=TEXT(stored=True)
+        )
+
+    #   create index
+    if not os.path.exists(f"indexdir_{language}"):
+        os.mkdir(f"indexdir_{language}")        
+    storage = FileStorage(f"indexdir_{language}")
+    # Create an index
+    ix = storage.create_index(schema)
+
+    #
+    #   real indexing
+    #
+    writer = ix.writer()
+
+    bibletoUse = selectBible(language)
+    #       loop over all books
+    for book in ALLbooks:
+        if book in OTbooks:
+            mytag = f"{book.replace(' ', '')}, OldTestament, AllBooks"
+        else:
+            mytag = f"{book.replace(' ', '')}, NewTestament, AllBooks"
+        print(f"\nindexing {mytag} ...")
+        for chapter in range(1, chapsInBook[book]+1):
+            for verse in range(1, len(bibletoUse[book][chapter])+1):
+                writer.add_document(
+                    id = f"{book.replace(' ', '')} {chapter}:{verse}",
+                    content = bibletoUse[book][chapter][verse],
+                    tags = mytag 
+                )
+    writer.commit()    
+
+def isearch_book(book, query_string, language):
+    """
+    indexed search for English within book list (as filter)
+    """
+    # first parameter to lower
+    book = book.lower()
+    query_string = query_string.lower()
+
+    #   open the index
+    if not os.path.exists(f"indexdir_{language}"):
+        print(f"\n!!! No index dir found, I'm quitting ... !!!\n")
+        sys.exit(99)        
+    storage = FileStorage(f"indexdir_{language}")
+    ix = storage.open_index()
+
+    with ix.searcher() as s:
+        print(f"\nisearch in English ...")
+        phrase = query_string.split()
+        if len(phrase) > 1:
+            q1 = Phrase("content", phrase)
+        else: 
+            q1 = Term("content", query_string.strip())
+        print(f"\ntype of q1: {type(q1)}")
+        print(f"q1: {q1}")
+        q2 = Term("tags", book.replace(' ', ''))
+        print(f"\ntype of q2: {type(q2)}")
+        print(f"q2: {q2}")
+        results = s.search(q1, filter=q2, limit=1000)
+        print(f"isearch Results: {results}")
+        print(f"\nResults:")
+        total = len(results)
+        print(f"!!! Found {total} verses in {book} !!!")
+        page = 1
+        print(f"\nPage # {page}\n")  
+        for index in range(0, total):
+            r = results[index]
+            print(f"{r['id']} -- {r['content']}\n")
+            if (index + 1) % numberPerPage == 0 and (index+1) != total:
+                cont = input("continue y/n: ")
+                if cont == 'n' or cont == 'N':
+                    break
+                else:
+                    page = page + 1
+                    print(f"\nPage # {page}\n")
+
+
+def iCsearch_book(book, query_string, language):
+    """
+    indexed search for Chinese within book list (as 2nd Term in query)
+    """
+    # first parameter to lower
+    book = book.lower()
+
+    #   open the index
+    if not os.path.exists(f"indexdir_{language}"):
+        print(f"\n!!! No index dir found, I'm quitting ... !!!\n")
+        sys.exit(99)        
+    storage = FileStorage(f"indexdir_{language}")
+    ix = storage.open_index()
+
+    print(f"\n\nSearch in Chinese ...\n")
+    with ix.searcher() as s:
+        q1 = Term("content", query_string)
+        q2 = Term("tags", book.replace(' ', ''))
+        q = And([q1, q2])
+
+        results = s.search(q, limit=1000)
+        print(f"iCsearch Results: {results}")
+        print(f"\nResults:")
+        total = len(results)
+        print(f"!!! Found {total} verses in {book} !!!")
+        page = 1
+        print(f"\nPage # {page}\n")  
+        for index in range(0, total):
+            r = results[index]
+            print(f"{r['id']} -- {r['content']}")
+            if (index + 1) % numberPerPage == 0 and (index+1) != total:
+                cont = input("continue y/n: ")
+                if cont == 'n' or cont == 'N':
+                    break
+                else:
+                    page = page + 1
+                    print(f"\nPage # {page}\n")  
+
+def indexSearch():
+    """
+    top level indexed search
+    """
+
+    """
+    Some key words in Chinese:
+        神愛世人  亞伯拉罕  耶穌基督
+        神的旨意
+        義人必因信得生
+    """
+ 
+    if language == "zh-TW":
+        kw = input("Input search (Chinese) key words: ")
+    else:
+        kw = input("Input search (English) key words: ")
+    
+    print("""
+    Search in old testament,
+              new testament,
+              all books, or
+              a specific book in the format of 'b bookname'
+    """)
+    choice = input("o/n/a/b+book: ")
+    match choice:
+        case 'O' | 'o':
+            book = 'oldtestament'            
+        case 'N' | 'n':
+            book = 'newtestament'
+        case 'A' | 'a':
+            book = 'allbooks'
+        case _:
+            _choice, book = choice.split(' ', maxsplit=1)
+            if (_choice == 'B' or _choice == 'b') and book in ALLbooks:
+                book = book.replace(' ', '')
+            else:
+                print(f"\n!!! Invalid choice !!!\n")
+                bibletoUse = cbible if language == 'zh-TW' else bible
+                print(random_verse(bibletoUse))
+                return
+    print(f'Search "{kw}" in {book} ...')
+    # do the task -- make call
+    if language == "zh-TW":
+        iCsearch_book(book, kw, 'zh-TW')
+    else:
+        isearch_book(book, kw, 'en')
 
 def random_verse(bible, book=False):
   if not book:
@@ -38,10 +238,13 @@ def random_verse(bible, book=False):
 
 def search_key(book, chapter, kw, language='zh-TW'):
     """ Keyword (kw) search on specified bible[book][chapter]
-    return a list of verses (along with the book and chapter) 
     
-    return list format: [book, chapter, [list of verses]]
+    return a list of verses (along with the book and chapter)
+        which looks like [book, chapter, [list of verses]]
+    ^^^^^ this is different from indexed search, which (as defined by index Schema^ ) is
+            [[id, content, tags]] ^^^^^
     """
+
     bibletoUse = selectBible(language)
     dic = bibletoUse[book][chapter]
     patc = re.compile(kw.lower())
@@ -59,6 +262,8 @@ def search_booklist(bookList, kw, language='zh-TW'):
         for chapter in range(1, chapsInBook[book]+1):
             _result = search_key(book, chapter, kw, language)
             result.append(_result)
+    #   trim all empty verse list
+    result = [x for x in result if len(x[2]) > 0]
     return result
     
 def search_OT(kw, language='zh-TW'):
@@ -421,26 +626,53 @@ def search():
     kw = input("Input search key words: ")
     print("""
     Search in old testament,
-              new testament, or
-              all books
+              new testament,
+              all books, or
+              a specific book in the format of 'b bookname'
     """)
-    choice = input("o/n/a: ")
-    print('Search "{0}" in '.format(kw))
-    if (choice == 'o' or choice == 'O'):
-        results = search_OT(kw, language)
-        print('Old testament:')
-    elif (choice == 'n' or choice == 'N'):
-        results = search_NT(kw, language)
-        print('New testament:')
-    else: # all other cases: including (choice == 'a' or choice == 'A'):
-        results = search_ALL(kw, language)
-        print('All books:')
-    for piece in results:
-        book, chapter, verses = piece
+    choice = input("o/n/a/b+book: ")
+    match choice:
+        case 'O' | 'o':
+            book = "Old testament"
+            results = search_OT(kw, language)
+        case 'N' | 'n':
+            book = "New testament"
+            results = search_NT(kw, language)
+        case 'A' | 'a':
+            book = "All books"
+            results = search_ALL(kw, language)
+        case _:
+            _choice, book = choice.split(' ', maxsplit=1)
+            if (_choice == 'B' or _choice == 'b') and book in ALLbooks:
+                results = search_booklist([book], kw, language)
+                print(f"Book: {book}")
+            else:
+                print(f"\n!!! Invalid choice !!!\n")
+                bibletoUse = cbible if language == 'zh-TW' else bible
+                print(random_verse(bibletoUse))
+                return
+    #   a summary of results
+    total = 0
+    for r in results:
+        total += len(r[2])
+    print(f" !!! Results: found {total} verses in '{book}' !!!")
+    page = 1
+    index = -1
+    print(f"\nPage # {page}\n")  
+    for r in results:
+        book, chapter, verses = r
         for verse in verses:
             print('{0} {1}:{2} \n{3}'.format(book, chapter, verse, bible[book][chapter][verse]))
             print('{0} {1}:{2} \n{3}\n'.format(book, chapter, verse, cbible[book][chapter][verse]))
-        
+            index = index + 1
+            #   check for page break
+            if (index + 1) % numberPerPage == 0 and (index+1) != total:
+                cont = input("continue y/n: ")
+                if cont == 'n' or cont == 'N':
+                    break
+                else:
+                    page = page + 1
+                    print(f"\nPage # {page}\n")   
     
 def testAll():
     test0()
@@ -453,10 +685,12 @@ def main():
     O/o List books in old testament
     N/n List books in new testament
     D/d Display a book/chapter/verse in the bible
+    S/s Search
     A/a Audio a book/chapter/verse in the bible
     L/l Configure language for audio/search
     E/e Configure text-to-speak engine
-    S/s Search
+    I/i Index bible for search
+    Z/z New Search using index
     T/t Tests
     Q/q. Exit
     """
@@ -471,10 +705,12 @@ def main():
             case 'O' | 'o': listOTbooks()
             case 'N' | 'n': listNTbooks()
             case 'D' | 'd': displayText()
-            case 'L' | 'l': configLanguage()
-            case 'E' | 'e': configEngine()
             case 'S' | 's': search()
             case 'T' | 't': testAll()
+            case 'I' | 'i': index_bible()
+            case 'L' | 'l': configLanguage()
+            case 'E' | 'e': configEngine()
+            case 'Z' | 'z': indexSearch()
             case 'Q' | 'q': quit()
             case _: continue
 
@@ -512,6 +748,9 @@ language = 'zh-TW'
 
 #   set default tts engine to: edge-tts
 engine = 'edge-tts'
+
+#   set default number of entries per page
+numberPerPage = 10
 
 if __name__ == "__main__":
     main()
