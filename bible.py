@@ -219,8 +219,7 @@ def indexSearch():
                 book = book.replace(' ', '')
             else:
                 print(f"\n!!! Invalid choice !!!\n")
-                bibletoUse = cbible if language == 'zh-TW' else bible
-                print(random_verse(bibletoUse))
+                print(random_verse(bible))
                 return
     print(f'Search "{kw}" in {book} ...')
     # do the task -- make call
@@ -229,12 +228,16 @@ def indexSearch():
     else:
         isearch_book(book, kw, 'en')
 
-def random_verse(bible, book=False):
-  if not book:
-     book = random.choice(list(bible.keys()))
-  chapter = random.choice(list(bible[book].keys()))
-  verse = random.choice(list(bible[book][chapter].keys()))
-  return '{0} {1}:{2} \n{3}'.format(book, chapter, verse, bible[book][chapter][verse])
+def random_verse(bible_dc, book=False):
+    """
+    generate a random verse in English and Chinese
+        bible_dc: we choose to ignore the passed bible version
+    """
+    if not book:
+        book = random.choice(list(bible.keys()))
+    chapter = random.choice(list(bible[book].keys()))
+    verse = random.choice(list(bible[book][chapter].keys()))
+    return f"{book} {chapter}:{verse}\n{bible[book][chapter][verse]}\n{cbible[book][chapter][verse]}"
 
 def search_key(book, chapter, kw, language='zh-TW'):
     """ Keyword (kw) search on specified bible[book][chapter]
@@ -300,10 +303,11 @@ def display_book(book, halt=True):
     """
     #global bible, cbible, chapsInBook
     for chapter in range(1, chapsInBook[book]+1):
-        print("\n{0} {1}:".format(book, chapter))
+        print(f"\n{book}\t{chapter}:\n")
         for verse in range(1, len(bible[book][chapter])+1):
             print("{0} {1}".format(verse, bible[book][chapter][verse]))
             print("{0} {1}\n".format(verse, cbible[book][chapter][verse]))
+        print(f"^^^^^ {book}\tchapter {chapter} ^^^^^\n")
         if halt and (chapter < chapsInBook[book]):
             input("hit any key to continue")
 
@@ -312,7 +316,7 @@ def display_chapter(book, chapter, halt=False):
     """ Dispaly a chapter in a book 
     """
     #global bible, cbible
-    print("\n{0}\t{1}:\n".format(book, chapter))
+    print(f"\n{book}\t{chapter}:\n")
     for verse in range(1, len(bible[book][chapter])+1):
         print ("{0} {1}".format(verse, bible[book][chapter][verse]))
         try:
@@ -321,6 +325,7 @@ def display_chapter(book, chapter, halt=False):
             ic(f"No verse {book} {chapter}:{verse} in zh-TW bible version")
         if halt:
             input("hit any key to continue")
+    print(f"^^^^^ {book}\tchapter {chapter} ^^^^^\n")
 
 def display_verse(book, chapter, verse):
     """ Dispaly a verse in the bible 
@@ -333,17 +338,14 @@ def display_verse(book, chapter, verse):
 def audio_book(book, language='zh-TW', engine='edge-tts', playAudio=False):
     """ Convert a book to audio files 
     """
-    #global bible, cbible, chapsInBook
     for chapter in range(1, chapsInBook[book]+1):
-        ic(book, chapter)
         audio_chapter(book, chapter, language, engine, playAudio)
 
 def audio_chapter(book, chapter, language='zh-TW', engine='edge-tts', playAudio=True):
     """ Convert a chapter in a book to audio, and
             play it if choose so. 
     """
-    #global bible, cbible
-    ic(book, chapter)
+
     #   strip whitespace in book name
     shortBook = book.replace(" ", "")
     #   add book name and chapter # in audio
@@ -570,29 +572,29 @@ def audioText():
         print(random_verse(bible))
         return
     #
-    # input chapter
+    # input chapter/s
     #
     _tmp = input("Input chapter no. in the book: ")
-    if (_tmp == ''):                # no chapter is entered
-        audio_book(book, language, engine)              # display book
+    if (_tmp == ''):                        # book -- no chapter is entered
+        audio_book(book, language, engine)
         return
-    else:
-        chapter = int(_tmp)         # chapter must be OK, all error goes to 1
-        if (chapter > chapsInBook[book] or chapter < 1):
-            if ():
-                print('\nThere is only one chapter in the book of {0}.\n'.format(book))
-            else:
-                print('\nThere are {0} chapters in the book of {1}.\n'.format(chapsInBook[book], book))
-            print(random_verse(bible, book))
-            return
-        else:                       # chapter OK, then input verse
-            _tmp = input("Input the verse no.: ")
-            if (_tmp == ''):        # no verse is entered
-                audio_chapter(book, chapter, language, engine)  # audio book+chapter
-            else:                   # verse OK?
-                verse = int(_tmp)
-                ic(book, chapter, verse)
-                audio_verse(book, chapter, verse, language, engine)
+    else:                                   # book+chapter(s)
+        # construct chapterlist from input
+        chapters = [int(x) for x in _tmp.split(',')]
+        # only play the audio if a single chapter is selected
+        if len(chapters) > 1:
+            playAudio = False
+        else:
+            playAudio = True
+        for chapter in chapters:
+            if (chapter > chapsInBook[book] or chapter < 1):
+                print(f"\n!!! There are {chapsInBook[book]} chapter/s in the book of {book}. !!!")
+                print(f"      Not able to locate chapter {chapter} in {book}\n")
+                print(random_verse(bible, book))
+                return
+            #   chapter
+            audio_chapter(book, chapter, language, engine, playAudio)  # audio book+chapter
+
                     
 def configLanguage():
     """ Configure language for audio/search
@@ -648,8 +650,7 @@ def search():
                 print(f"Book: {book}")
             else:
                 print(f"\n!!! Invalid choice !!!\n")
-                bibletoUse = cbible if language == 'zh-TW' else bible
-                print(random_verse(bibletoUse))
+                print(random_verse(bible))
                 return
     #   a summary of results
     total = 0
