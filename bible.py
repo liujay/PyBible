@@ -143,7 +143,6 @@ def isearch_book(book, query_string, language):
                     page = page + 1
                     print(f"\nPage # {page}\n")
 
-
 def iCsearch_book(book, query_string, language):
     """
     indexed search for Chinese within book list (as 2nd Term in query)
@@ -327,13 +326,18 @@ def display_chapter(book, chapter, halt=False):
             input("hit any key to continue")
     print(f"^^^^^ {book}\tchapter {chapter} ^^^^^\n")
 
-def display_verse(book, chapter, verse):
+def display_verse(book, chapter, verse, language=None):
     """ Dispaly a verse in the bible 
     """
     #global bible, cbible
-    print ("\n{0}\t{1}:{2}\n".format(book, chapter, verse))
-    print ("{0}".format(bible[book][chapter][verse]))
-    print ("{0}\n".format(cbible[book][chapter][verse]))
+    print (f"\n{book}  {chapter}:{verse}")
+    if not language:
+        print (f"{bible[book][chapter][verse]}")
+        print (f"{cbible[book][chapter][verse]}\n")
+    else:   # verse in one language only
+        bibletoUse = selectBible(language)
+        print (f"{bibletoUse[book][chapter][verse]}")
+
 
 def audio_book(book, language='zh-TW', engine='edge-tts', playAudio=False):
     """ Convert a book to audio files 
@@ -561,6 +565,55 @@ def displayText():
                     print('\nYour selection is not in the Bible!\n')
                     print(random_verse(bible, book))
 
+def correctVerse():
+    """
+    correct one verse
+    """
+    # input book
+    #
+    book = input("Input name of the book: ")
+    if (book not in ALLbooks):
+        print("\nbook must be one of --\n{0}\n".format(ALLbooks))
+        print(random_verse(bible))
+        return
+    # input chapter
+    #
+    _tmp = input(f"Input chapter no. in the book {book}: ")
+    chapter = int(_tmp)         # chapter must be OK, all error goes to 1
+    if (chapter > chapsInBook[book] or chapter < 1):
+        if ():
+            print('\nThere is only one chapter in the book of {0}.\n'.format(book))
+        else:
+            print('\nThere are {0} chapters in the book of {1}.\n'.format(chapsInBook[book], book))
+        print(random_verse(bible, book))
+        return
+    # verse
+    #
+    _tmp = input("Input the verse no.: ")
+    verse = int(_tmp)
+    try:        # verse OK?
+        display_verse(book, chapter, verse)
+    except:     # something went wrong with the verse
+        print(f"\nVerse {verse} is not in {book} {chapter}!\n")
+        print(random_verse(bible, book))
+        return
+    # correction
+    #
+    bibletoUse = selectBible(language)
+    print(f"Current text for {book} {chapter}:{verse} is:")
+    oldtext = bibletoUse[book][chapter][verse]
+    print(f"{oldtext}")
+    newtext = input(f"\nInput corrected verse for {book} {chapter}:{verse} :\n")
+    decision = input(f"REPLACING \n{oldtext}\n with \n{newtext}\n----- y/n?")
+    if decision == 'y' or decision == 'Y':
+        bibletoUse[book][chapter][verse] = newtext
+        # update packle file
+        pkl_file = 'cbible.pkl' if language == 'zh-TW' else 'bible.pkl'
+        f = open(pkl_file, 'wb')
+        pickle.dump(bibletoUse, f)
+        f.close()
+
+
 def audioText():
     #global ALLbooks, chapsInBook, bible
     #
@@ -692,6 +745,7 @@ def main():
     E/e Configure text-to-speak engine
     I/i Index bible for search
     Z/z New Search using index
+    C/c Correct bible verse
     T/t Tests
     Q/q. Exit
     """
@@ -709,9 +763,10 @@ def main():
             case 'S' | 's': search()
             case 'T' | 't': testAll()
             case 'I' | 'i': index_bible()
+            case 'Z' | 'z': indexSearch()
             case 'L' | 'l': configLanguage()
             case 'E' | 'e': configEngine()
-            case 'Z' | 'z': indexSearch()
+            case 'C' | 'c': correctVerse()
             case 'Q' | 'q': quit()
             case _: continue
 
