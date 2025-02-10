@@ -685,24 +685,25 @@ def audioText():
     if (_tmp == ''):                        # book -- no chapter is entered
         audio_book(book, language, engine)
         return
-    else:                                   # book+chapter(s)
-        # construct chapterlist from input
-        chapters = [int(x) for x in _tmp.split(',')]
-        # only play the audio if a single chapter is selected
-        if len(chapters) > 1:
-            playAudio = False
-        else:
-            playAudio = True
-        for chapter in chapters:
-            if (chapter > chapsInBook[book] or chapter < 1):
-                print(f"\n!!! There are {chapsInBook[book]} chapter/s in the book of {book}. !!!")
-                print(f"      Not able to locate chapter {chapter} in {book}\n")
-                print(random_verse(bible, book))
-                return
-            #   chapter
-            audio_chapter(book, chapter, language, engine, playAudio)  # audio book+chapter
-
-                    
+    elif ('..' in _tmp):    # book+chapters in kind of expansion format
+        first, last = _tmp.split('..')
+        chapters = [ c for c in range(int(first), int(last)+1) ]
+    else:                   # book+chapters in kind of csv format
+        chapters = [ int(x) for x in _tmp.split(',') ]
+    # only play the audio if a single chapter is selected
+    if len(chapters) > 1:
+        playAudio = False
+    else:
+        playAudio = True
+    for chapter in chapters:
+        if (chapter > chapsInBook[book] or chapter < 1):
+            print(f"\n!!! There are {chapsInBook[book]} chapter/s in the book of {book}. !!!")
+            print(f"      Not able to locate chapter {chapter} in {book}\n")
+            print(random_verse(bible, book))
+            return
+        #   chapter # is OK
+        audio_chapter(book, chapter, language, engine, playAudio)  # audio book+chapter
+             
 def configLanguage():
     """ Configure language for audio/search
     """
