@@ -18,6 +18,7 @@ July 5, 2021
 
 """
 
+from configparser import ConfigParser
 import os, platform, sys
 import pickle
 import random, re
@@ -35,6 +36,55 @@ try:
 except ImportError:
     ic = print
 
+class Config:
+    def __init__(self, configfile, verbose=False):
+        self.configfile = configfile
+        self.verbose = verbose
+
+    def set_config(self, section, key, value):
+        config_file_path = self.configfile
+        config = ConfigParser()
+        try:
+            with open(config_file_path) as conf:
+                config.read(config_file_path)
+                config[section][key] = value
+                with open(config_file_path, 'w') as conf:
+                    config.write(conf)
+        except (OSError, IOError) as e:
+            raise Exception("Couldn't find path to config.ini.") from e
+        if self.verbose:
+            print(f"  SET config[{section}, {key}] = {value}", file=sys.stderr)
+
+    def get_config(self, section, key):
+        config_file_path = self.configfile
+        config = ConfigParser()
+        try:
+            with open(config_file_path) as conf:
+                config.read(config_file_path)
+                value = config.get(section, key)
+                if self.verbose:
+                    print(f"  GET config[{section}, {key}] = {value}", file=sys.stderr)
+                return value
+        except (OSError, IOError) as e:
+            raise Exception("Couldn't find path to config.ini.") from e
+
+    def list_config(self):
+        config_file_path = self.configfile
+        config = ConfigParser()
+        print(f"\n--- Configuration ---")
+        print(f"Contents of config file: {self.configfile}")
+        try:
+            with open(config_file_path) as conf:
+                config.read(config_file_path)
+                for section in config.sections():
+                    print(f"    {section}")
+                    for key in config[section]:
+                        _value = config.get(section, key)
+                        value = _value if _value else '-NULL-'
+                        print(f"        {key} :   {value}")
+                    print()
+        except (OSError, IOError) as e:
+            raise Exception("Couldn't find path to config.ini.") from e
 
 def index_bible():
     """
@@ -173,6 +223,7 @@ def iCsearch_book(book, query_string, language):
         for index in range(0, total):
             r = results[index]
             print(f"{r['id']} -- {r['content']}")
+            global numberPerPage
             if (index + 1) % numberPerPage == 0 and (index+1) != total:
                 cont = input("continue y/n: ")
                 if cont == 'n' or cont == 'N':
@@ -188,9 +239,11 @@ def indexSearch():
 
     """
     Some key words in Chinese:
-        神愛世人  亞伯拉罕  耶穌基督
+        神愛世人
+        耶穌基督
         神的旨意
         義人必因信得生
+        愛人如己
     """
  
     if language == "zh-TW":
@@ -433,7 +486,8 @@ def playAudioFile(fileName, osType):
     """ Play audio fileName using OS features
     """
     if osType in ["Linux"]:
-        os.system(f"play {fileName} 2>/dev/null &")
+        global player
+        os.system(f"{player} {fileName} 2>/dev/null &")
     elif osType in ["Windows"]:
         __location__ = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
         os.startfile(os.path.join(__location__, fileName))
@@ -732,7 +786,7 @@ def testAll():
     test0()
     test1()
     test_search()
-            
+   
 def main():
 
     PROMPT = """
@@ -751,8 +805,8 @@ def main():
     """
 
     while True:
-        print(f"\n  Audio/Search language selected: {language}")
-        print(f"  Text-to-Speek engine selected:  {engine}")
+        print(f"\n  Audio/Search language configure/selected: {language}")
+        print(f"  Text-to-Speek engine configure/selected:  {engine}")
         print(PROMPT) 
         choice = input("Your choice: ")
         match choice:
@@ -772,12 +826,28 @@ def main():
 
 # -----------------------------------------------------------------------------
 #
-# prepare our bible
-#                
-pkl_file = open('bible.pkl', 'rb')
-bible = pickle.load(pkl_file, encoding='utf-8')
-pkl_file = open('cbible.pkl', 'rb')
-cbible = pickle.load(pkl_file, encoding='utf-8')
+# prepare all globals
+#
+_configfile = "./config.ini"
+_cfg = Config(_configfile)
+#   default audio/search language
+language = _cfg.get_config('MAIN', 'language')
+#   pickle files for english and chinese bibles
+englishText = _cfg.get_config('TEXT', 'english')
+chineseText = _cfg.get_config('TEXT', 'chinese')
+#   default TTS engine
+engine = _cfg.get_config('TTS', 'engine')
+#   default player
+player = _cfg.get_config('TTS', 'player')
+#   others
+numberPerPage = int(_cfg.get_config('OTHERS', 'numberperpage'))
+#   list all config
+_cfg.list_config()
+
+_englishPkl = open(englishText, 'rb')
+_chinesePkl = open(chineseText, 'rb')
+bible = pickle.load(_englishPkl, encoding='utf-8')
+cbible = pickle.load(_chinesePkl, encoding='utf-8')
 
 #
 # i am lazy, so let the computer construct some global variables
@@ -796,17 +866,6 @@ for book in bible.keys():
         OTbooks.append(book)
     else:
         NTbooks.append(book)
-#        
-# -----------------------------------------------------------------------------
-
-#   set default audio/search language to: zh-TW
-language = 'zh-TW'
-
-#   set default tts engine to: edge-tts
-engine = 'edge-tts'
-
-#   set default number of entries per page
-numberPerPage = 10
 
 if __name__ == "__main__":
     main()
