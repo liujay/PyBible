@@ -760,28 +760,34 @@ def search():
                 print(f"\n!!! Invalid choice !!!\n")
                 print(random_verse(bible))
                 return
-    #   a summary of results
-    total = 0
-    for r in results:
-        total += len(r[2])
-    print(f" !!! Results: found {total} verses in '{book}' !!!")
-    page = 1
-    index = -1
-    print(f"\nPage # {page}\n")  
+    #   results are in book, chapter, verses format
+    #       we re-structure results to verseList for screen display
+    #           where verseList is of the format:
+    #               (book, chapter verse) -- for easy access
+    verseList = []
     for r in results:
         book, chapter, verses = r
-        for verse in verses:
-            print('{0} {1}:{2} \n{3}'.format(book, chapter, verse, bible[book][chapter][verse]))
-            print('{0} {1}:{2} \n{3}\n'.format(book, chapter, verse, cbible[book][chapter][verse]))
-            index = index + 1
-            #   check for page break
-            if (index + 1) % numberPerPage == 0 and (index+1) != total:
-                cont = input("continue y/n: ")
-                if cont == 'n' or cont == 'N':
-                    break
-                else:
-                    page = page + 1
-                    print(f"\nPage # {page}\n")   
+        for v in verses:
+            verseList.append((book, chapter, v))
+    total = len(verseList)
+    print(f" !!! Results: found {total} verses in searching for '{kw}' !!!")
+    page = 1
+    index = 0
+    print(f"\nPage # {page}\n")
+    for r in verseList:
+        book, chapter, verse = r
+        index = index + 1
+        #print(f"--- verse #{index} ---")
+        print('{0} {1}:{2} \n{3}'.format(book, chapter, verse, bible[book][chapter][verse]))
+        print('{0} {1}:{2} \n{3}\n'.format(book, chapter, verse, cbible[book][chapter][verse]))
+        #   check for page break
+        if index % numberPerPage == 0 and index != total:
+            cont = input("continue y/n: ")
+            if cont == 'n' or cont == 'N':
+                break
+            else:
+                page = page + 1
+                print(f"\nPage # {page}\n")   
     
 def testAll():
     test0()
