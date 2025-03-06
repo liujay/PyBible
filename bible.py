@@ -685,24 +685,25 @@ def audioText():
     if (_tmp == ''):                        # book -- no chapter is entered
         audio_book(book, language, engine)
         return
-    else:                                   # book+chapter(s)
-        # construct chapterlist from input
-        chapters = [int(x) for x in _tmp.split(',')]
-        # only play the audio if a single chapter is selected
-        if len(chapters) > 1:
-            playAudio = False
-        else:
-            playAudio = True
-        for chapter in chapters:
-            if (chapter > chapsInBook[book] or chapter < 1):
-                print(f"\n!!! There are {chapsInBook[book]} chapter/s in the book of {book}. !!!")
-                print(f"      Not able to locate chapter {chapter} in {book}\n")
-                print(random_verse(bible, book))
-                return
-            #   chapter
-            audio_chapter(book, chapter, language, engine, playAudio)  # audio book+chapter
-
-                    
+    elif ('..' in _tmp):    # book+chapters in kind of expansion format
+        first, last = _tmp.split('..')
+        chapters = [ c for c in range(int(first), int(last)+1) ]
+    else:                   # book+chapters in kind of csv format
+        chapters = [ int(x) for x in _tmp.split(',') ]
+    # only play the audio if a single chapter is selected
+    if len(chapters) > 1:
+        playAudio = False
+    else:
+        playAudio = True
+    for chapter in chapters:
+        if (chapter > chapsInBook[book] or chapter < 1):
+            print(f"\n!!! There are {chapsInBook[book]} chapter/s in the book of {book}. !!!")
+            print(f"      Not able to locate chapter {chapter} in {book}\n")
+            print(random_verse(bible, book))
+            return
+        #   chapter # is OK
+        audio_chapter(book, chapter, language, engine, playAudio)  # audio book+chapter
+             
 def configLanguage():
     """ Configure language for audio/search
     """
@@ -763,25 +764,31 @@ def search():
     total = 0
     for r in results:
         total += len(r[2])
-    print(f" !!! Results: found {total} verses in '{book}' !!!")
+    print(f" !!! Results: found {total} verses for '{kw}' in '{book}' !!!")
     page = 1
     index = -1
-    print(f"\nPage # {page}\n")  
+    breakOuter = False
     for r in results:
         book, chapter, verses = r
         for verse in verses:
+            index = index + 1
             print('{0} {1}:{2} \n{3}'.format(book, chapter, verse, bible[book][chapter][verse]))
             print('{0} {1}:{2} \n{3}\n'.format(book, chapter, verse, cbible[book][chapter][verse]))
-            index = index + 1
             #   check for page break
             if (index + 1) % numberPerPage == 0 and (index+1) != total:
                 cont = input("continue y/n: ")
                 if cont == 'n' or cont == 'N':
+                    #   setup break for outer (results) for loop
+                    #       before we break inner (verses) loop
+                    breakOuter = True
+                    #   break inner loop first
                     break
                 else:
                     page = page + 1
-                    print(f"\nPage # {page}\n")   
-    
+                    print(f"\nPage # {page}\n")
+        if breakOuter:
+            break
+
 def testAll():
     test0()
     test1()
