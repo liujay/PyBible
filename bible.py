@@ -348,25 +348,55 @@ def search_ALL(kw, language='zh-TW'):
     #global ALLbooks
     return search_booklist(ALLbooks, kw, language)
 
-def display_book(book, language='zh-TW', halt=False):
+def display_book(book, halt=False):
     """ Dispaly a book
     
     halt at the end of each chapter 
     """
     #global bible, cbible, chapsInBook
     for chapter in range(1, chapsInBook[book]+1):
-        display_chapter(book, chapter, language, halt)
+        display_chapter(book, chapter)
         if halt and (chapter < chapsInBook[book]):
             input("hit any key to continue")
 
 
-def display_chapter(book, chapter, language='zh-TW', halt=False):
+def display_chapter(book, chapter, language='ALL'):
     """ Dispaly a chapter in a book 
     """
     #global bible, cbible
-    bibletoUse = selectBible(language)
     print(f"\n{book}\t{chapter}:\n")
-    for verse in range(1, len(bibletoUse[book][chapter])+1):
+    if language == 'ALL':
+        # take care of some mis-matches, ie
+        # last verse may miss in some versions, eg
+        #   John 7:53 in CUV, and
+        #   3 John :15 in KJV
+        noVerses = max(len(bible[book][chapter]), len(cbible[book][chapter]))
+        for verse in range(1, noVerses+1):
+            try:
+                text_en = bible[book][chapter][verse]
+            except KeyError:
+                text_en = ''
+            try:
+                text_zh = cbible[book][chapter][verse]
+            except KeyError:
+                text_zh = ''
+            print(f"{verse} {text_en}")
+            print(f"{verse} {text_zh}\n")
+    else:
+        bibletoUse = selectBible(language)
+        for verse in range(1, len(bibletoUse[book][chapter])+1):
+            print(f"{verse} {bibletoUse[book][chapter][verse]}")     
+    print(f"^^^^^ {book}\tchapter {chapter} ^^^^^\n")
+
+def display_verse(book, chapter, verse, language=None):
+    """ Dispaly a verse in the bible 
+    """
+    #global bible, cbible
+    print (f"\n{book}  {chapter}:{verse}")
+    if language:
+        bibletoUse = selectBible(language)
+        print (f"{bibletoUse[book][chapter][verse]}")
+    else:   # verse in one language only
         try:
             text_en = bible[book][chapter][verse]
         except KeyError:
@@ -376,23 +406,7 @@ def display_chapter(book, chapter, language='zh-TW', halt=False):
         except KeyError:
             text_zh = ''
         print(f"{verse} {text_en}")
-        print(f"{verse} {text_zh}\n")        
-        if halt:
-            input("hit any key to continue")
-    print(f"^^^^^ {book}\tchapter {chapter} ^^^^^\n")
-
-def display_verse(book, chapter, verse, language='zh-TW'):
-    """ Dispaly a verse in the bible 
-    """
-    #global bible, cbible
-    print (f"\n{book}  {chapter}:{verse}")
-    if not language:
-        print (f"{bible[book][chapter][verse]}")
-        print (f"{cbible[book][chapter][verse]}\n")
-    else:   # verse in one language only
-        bibletoUse = selectBible(language)
-        print (f"{bibletoUse[book][chapter][verse]}")
-
+        print(f"{verse} {text_zh}\n")
 
 def audio_book(book, language='zh-TW', engine='edge-tts', playAudio=False, halt=False):
     """ Convert a book to audio files 
@@ -614,7 +628,7 @@ def displayText():
     #
     _tmp = input("Input chapter no. in the book: ")
     if (_tmp == ''):                # no chapter is entered
-        display_book(book, language)              # display book
+        display_book(book, True)              # display book
         return
     else:
         chapter = int(_tmp)         # chapter must be OK, all error goes to 1
@@ -628,11 +642,11 @@ def displayText():
         else:                       # chapter OK, then input verse
             _tmp = input("Input the verse no.: ")
             if (_tmp == ''):        # no verse is entered
-                display_chapter(book, chapter, language)  # display book+chapter
+                display_chapter(book, chapter)  # display book+chapter
             else:                   # verse OK?
                 verse = int(_tmp)
                 try:                # verse OK
-                    display_verse(book, chapter, verse, language)
+                    display_verse(book, chapter, verse)
                     return
                 except:             # something went wrong with the verse
                     print('\nYour selection is not in the Bible!\n')
