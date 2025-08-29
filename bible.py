@@ -348,35 +348,44 @@ def search_ALL(kw, language='zh-TW'):
     #global ALLbooks
     return search_booklist(ALLbooks, kw, language)
 
-def display_book(book, halt=True):
+def display_book(book, halt=False):
     """ Dispaly a book
     
     halt at the end of each chapter 
     """
     #global bible, cbible, chapsInBook
     for chapter in range(1, chapsInBook[book]+1):
-        print(f"\n{book}\t{chapter}:\n")
-        for verse in range(1, len(bible[book][chapter])+1):
-            print("{0} {1}".format(verse, bible[book][chapter][verse]))
-            print("{0} {1}\n".format(verse, cbible[book][chapter][verse]))
-        print(f"^^^^^ {book}\tchapter {chapter} ^^^^^\n")
+        display_chapter(book, chapter)
         if halt and (chapter < chapsInBook[book]):
             input("hit any key to continue")
 
 
-def display_chapter(book, chapter, halt=False):
+def display_chapter(book, chapter, language='ALL'):
     """ Dispaly a chapter in a book 
     """
     #global bible, cbible
     print(f"\n{book}\t{chapter}:\n")
-    for verse in range(1, len(bible[book][chapter])+1):
-        print ("{0} {1}".format(verse, bible[book][chapter][verse]))
-        try:
-            print ("{0} {1}\n".format(verse, cbible[book][chapter][verse]))
-        except KeyError:
-            ic(f"No verse {book} {chapter}:{verse} in zh-TW bible version")
-        if halt:
-            input("hit any key to continue")
+    if language == 'ALL':
+        # take care of some mis-matches, ie
+        # last verse may miss in some versions, eg
+        #   John 7:53 in CUV, and
+        #   3 John :15 in KJV
+        noVerses = max(len(bible[book][chapter]), len(cbible[book][chapter]))
+        for verse in range(1, noVerses+1):
+            try:
+                text_en = bible[book][chapter][verse]
+            except KeyError:
+                text_en = ''
+            try:
+                text_zh = cbible[book][chapter][verse]
+            except KeyError:
+                text_zh = ''
+            print(f"{verse} {text_en}")
+            print(f"{verse} {text_zh}\n")
+    else:
+        bibletoUse = selectBible(language)
+        for verse in range(1, len(bibletoUse[book][chapter])+1):
+            print(f"{verse} {bibletoUse[book][chapter][verse]}")     
     print(f"^^^^^ {book}\tchapter {chapter} ^^^^^\n")
 
 def display_verse(book, chapter, verse, language=None):
@@ -384,19 +393,28 @@ def display_verse(book, chapter, verse, language=None):
     """
     #global bible, cbible
     print (f"\n{book}  {chapter}:{verse}")
-    if not language:
-        print (f"{bible[book][chapter][verse]}")
-        print (f"{cbible[book][chapter][verse]}\n")
-    else:   # verse in one language only
+    if language:
         bibletoUse = selectBible(language)
         print (f"{bibletoUse[book][chapter][verse]}")
+    else:   # verse in one language only
+        try:
+            text_en = bible[book][chapter][verse]
+        except KeyError:
+            text_en = ''
+        try:
+            text_zh = cbible[book][chapter][verse]
+        except KeyError:
+            text_zh = ''
+        print(f"{verse} {text_en}")
+        print(f"{verse} {text_zh}\n")
 
-
-def audio_book(book, language='zh-TW', engine='edge-tts', playAudio=False):
+def audio_book(book, language='zh-TW', engine='edge-tts', playAudio=False, halt=False):
     """ Convert a book to audio files 
     """
     for chapter in range(1, chapsInBook[book]+1):
         audio_chapter(book, chapter, language, engine, playAudio)
+        if halt:
+            input("hit any key to continue")
 
 def audio_chapter(book, chapter, language='zh-TW', engine='edge-tts', playAudio=True):
     """ Convert a chapter in a book to audio, and
@@ -411,10 +429,10 @@ def audio_chapter(book, chapter, language='zh-TW', engine='edge-tts', playAudio=
     bibletoUse = selectBible(language)
     #   compose verseList by scaning all verses in 'bibletoUse[book][chapter]' -- some verses are missing in other language version, eg CUN
     verseList = []
-    for verse in range(1, len(bible[book][chapter])+1):
+    for verse in range(1, len(bibletoUse[book][chapter])+1):
         verse in bibletoUse[book][chapter] and verseList.append(verse)
     text = "\n".join(bibletoUse[book][chapter][verse]  for verse in verseList )
-    display_chapter(book, chapter)
+    display_chapter(book, chapter, language)
     #   mkdir if it does not exist
     Path(f"./audio/{language}/{shortBook}").mkdir(parents=True, exist_ok=True)
     fileName = f"./audio/{language}/{shortBook}/{shortBook}_{chapter}.mp3"
@@ -436,7 +454,7 @@ def audio_verse(book, chapter, verse, language='zh-TW', engine='edge-tts'):
     except KeyError:
         ic(f"No verse {book} {chapter}:{verse} in {language} bible version")
         return
-    display_verse(book, chapter, verse)
+    display_verse(book, chapter, verse, language)
     shortBook = book.replace(" ", "")
     #   mkdir if it does not exist
     Path(f"./audio/tmp/{language}").mkdir(parents=True, exist_ok=True)
@@ -506,6 +524,7 @@ def test0():
     """ test on global variables """
     
     #global ALLbooks, OTbooks, NTbooks, chapsInBook
+    print(f"Test 0: ")
     print("\nAll books in bible:")
     print(ALLbooks)
     print("\nbooks in OT:")
@@ -514,36 +533,49 @@ def test0():
     print(NTbooks)
     print("\nChapters in Books:")
     for book in ALLbooks:
-        print("{0} : {1}".format(book, chapsInBook[book]))
-
+        print(f"{book} : {chapsInBook[book]}")
+        # check if verses in each book of  en-bible and zh-bible are equal
+        for chapter in range(1, chapsInBook[book]+1):
+            len_en = len(bible[book][chapter])
+            len_zh = len(cbible[book][chapter])
+            if (len_en == len_zh):
+                #print(f"    {book}:{chapter} OK")
+                pass
+            else:
+                print(f"    {book}:{chapter} Diff {len_en} <--> {len_zh}")                
+    print(f"--- End of Test 0 ---\n")
 
 def test1():
     """ test on basic functions """
     
     #global bible    
     # test to print John 3:16
-    print("\ntest to print John 3:16")
+    print(f"Test 1: ")
+    print("\nprint John 3:16")
     print(bible['John'][3][16])
     print(cbible['John'][3][16])
     
     # test of random_verse
-    print("\ntest of random_verse")
+    print("\nrandom_verse")
     print(random_verse(bible))
 
     # test of random_verse on book Acts
-    print("\ntest of random_verse on book Acts")
+    print("\nrandom_verse on book Acts")
     print(random_verse(bible, 'Acts'))
     
     # test of display 1 Jone 5
-    print("\ntest of display 1 John Chapter 5")
+    print("\ndisplay 1 John Chapter 5")
     display_chapter('1 John', 5)
-    display_book('James', False)
+    print("\ndisplay all 5 chapters in James")
+    display_book('James')
+    print(f"--- End of Test 1 ---\n")
     
 def test_search():
     """ test on search functions """
 
+    print(f"Test of search: ")
     # test of search on book John chapter 3
-    print("\ntest of search on word 'God' in John chapter 3")
+    print("\nsearch on word 'God' in John chapter 3")
     results = search_key('John', 3, 'God', 'en')
     print(results)
     book, chapter, verses = results
@@ -551,7 +583,7 @@ def test_search():
         print('{0} {1}:{2} \n{3}'.format(book, chapter, verse, bible[book][chapter][verse]))
         print('{0} {1}:{2} \n{3}\n'.format (book, chapter, verse, cbible[book][chapter][verse]))
     # test of search on OT
-    print("\ntest of search on word 'what wilt thou' in OT")
+    print("\nsearch on word 'what wilt thou' in OT")
     results = search_OT('what wilt thou', 'en')
     for piece in results:
         book, chapter, verses = piece
@@ -559,13 +591,14 @@ def test_search():
             print('{0} {1}:{2} \n{3}'.format(book, chapter, verse, bible[book][chapter][verse]))
             print('{0} {1}:{2} \n{3}\n'.format(book, chapter, verse, cbible[book][chapter][verse]))
     # test of search on NT
-    print("\ntest of search on word 'what wilt thou' in NT")
+    print("\nsearch on word 'what wilt thou' in NT")
     results = search_NT('what wilt thou', 'en')
     for piece in results:
         book, chapter, verses = piece
         for verse in verses:
             print('{0} {1}:{2} \n{3}'.format(book, chapter, verse, bible[book][chapter][verse]))
             print('{0} {1}:{2} \n{3}\n'.format(book, chapter, verse, cbible[book][chapter][verse]))
+    print(f"--- End of Test search ---\n")
             
 def quit():
     sys.exit(0)
@@ -595,7 +628,7 @@ def displayText():
     #
     _tmp = input("Input chapter no. in the book: ")
     if (_tmp == ''):                # no chapter is entered
-        display_book(book)              # display book
+        display_book(book, True)              # display book
         return
     else:
         chapter = int(_tmp)         # chapter must be OK, all error goes to 1
@@ -646,7 +679,7 @@ def correctVerse():
     _tmp = input("Input the verse no.: ")
     verse = int(_tmp)
     try:        # verse OK?
-        display_verse(book, chapter, verse)
+        display_verse(book, chapter, verse, language)
     except:     # something went wrong with the verse
         print(f"\nVerse {verse} is not in {book} {chapter}!\n")
         print(random_verse(bible, book))
